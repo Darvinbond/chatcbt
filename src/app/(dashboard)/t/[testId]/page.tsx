@@ -17,6 +17,7 @@ import { ChatContainer } from "@/components/features/chat/chat-container";
 import { Button } from "@/components/ui/button";
 import { StudentsArtifact } from "@/components/artifacts/students-artifact";
 import { AttemptsArtifact } from "@/components/artifacts/attempts-artifact";
+import { TestSettingsArtifact } from "@/components/artifacts/test-settings-artifact";
 import { toast } from "sonner";
 import AIPrompt from "@/components/kokonutui/ai-prompt";
 
@@ -90,6 +91,30 @@ export default function TestDetailsPage() {
     },
     onError: () => {
       toast.error("Failed to save questions. Please try again.");
+    },
+  });
+
+  const saveTestSettingsMutation = useMutation({
+    mutationFn: async (data: {
+      testId: string;
+      title: string;
+      description: string;
+      duration: number;
+    }) => {
+      const response = await fetch(`/api/tests/${data.testId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to save test settings");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+      hideArtifact();
+    },
+    onError: () => {
+      toast.error("Failed to save test settings. Please try again.");
     },
   });
 
@@ -283,24 +308,33 @@ export default function TestDetailsPage() {
   const openSettingsArtifact = useCallback(() => {
     if (!test) return;
 
+    const handleSave = (poolData: any) => {
+      saveTestSettingsMutation.mutate({
+        testId: testId as string,
+        ...poolData,
+      });
+    };
+
     showArtifact(
-      <div>
-        <h2 className="text-xl font-bold mb-4">Test Settings</h2>
-        <p>Duration: {test.duration} minutes</p>
-      </div>,
+      <TestSettingsArtifact test={test} />,
       "Test Settings",
       [
         {
-          onClick: () => {},
+          onClick: handleSave,
           trigger: (
             <Button key="save" className="rounded-full">
               Save Changes
             </Button>
           ),
         },
-      ]
+      ],
+      {
+        title: test.title,
+        description: test.description,
+        duration: test.duration,
+      }
     );
-  }, [test, showArtifact]);
+  }, [test, showArtifact, saveTestSettingsMutation, testId]);
 
   useEffect(() => {
     // Only initialize messages once when test is loaded
