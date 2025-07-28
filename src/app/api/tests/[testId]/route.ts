@@ -37,6 +37,11 @@ export async function GET(
       where: { id: testId, createdById: appUser.id },
       include: {
         students: true,
+        attempts: {
+          include: {
+            student: true,
+          },
+        },
       },
     })
     

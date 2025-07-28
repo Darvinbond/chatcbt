@@ -12,10 +12,11 @@ import {
 import { useArtifact } from "@/components/providers/artifact-provider";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { BookText, User, Settings } from "lucide-react";
+import { BookText, User, Settings, History } from "lucide-react";
 import { ChatContainer } from "@/components/features/chat/chat-container";
 import { Button } from "@/components/ui/button";
 import { StudentsArtifact } from "@/components/artifacts/students-artifact";
+import { AttemptsArtifact } from "@/components/artifacts/attempts-artifact";
 import { toast } from "sonner";
 import AIPrompt from "@/components/kokonutui/ai-prompt";
 
@@ -269,6 +270,16 @@ export default function TestDetailsPage() {
     );
   }, [test, testId, showArtifact, setPoolData, saveStudentsMutation]);
 
+  const openAttemptsArtifact = useCallback(() => {
+    if (!test) return;
+
+    showArtifact(
+      <AttemptsArtifact attempts={test.attempts || []} test={test} />,
+      "Attempts",
+      []
+    );
+  }, [test, showArtifact]);
+
   const openSettingsArtifact = useCallback(() => {
     if (!test) return;
 
@@ -344,12 +355,26 @@ export default function TestDetailsPage() {
                   </p>
                 </div>
               </button>
+              <button
+                onClick={openAttemptsArtifact}
+                className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
+              >
+                <History className="h-5 w-5" />
+                <div className="text-left">
+                  <span className="font-medium text-sm text-black">
+                    Attempts
+                  </span>
+                  <p className="text-xs text-zinc-500">
+                    {test.attempts?.length || 0} Attempts
+                  </p>
+                </div>
+              </button>
             </div>
           ),
         },
       ]);
     }
-  }, [test, openQuestionsArtifact, openStudentsArtifact, openSettingsArtifact]);
+  }, [test, openQuestionsArtifact, openStudentsArtifact, openSettingsArtifact, openAttemptsArtifact]);
 
   if (isLoading) {
     return (

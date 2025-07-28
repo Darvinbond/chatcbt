@@ -27,7 +27,44 @@ export const StudentSchema = z.object({
 
 export type Student = z.infer<typeof StudentSchema>;
 
-export const TestSchema = z.object({
+export type Attempt = {
+  id: string;
+  answers: Record<string, string>;
+  score?: number;
+  startedAt: Date;
+  submittedAt: Date;
+  duration?: number;
+  student: Student;
+  test: Test;
+};
+
+export const AttemptSchema: z.ZodType<Attempt> = z.lazy(() => z.object({
+  id: z.string(),
+  answers: z.record(z.string(), z.string()),
+  score: z.number().optional(),
+  startedAt: z.date(),
+  submittedAt: z.date(),
+  duration: z.number().optional(),
+  student: StudentSchema,
+  test: TestSchema,
+}));
+
+export type Test = {
+  id: string;
+  uid: string;
+  title: string;
+  description?: string;
+  duration: number;
+  questions: Question[];
+  students?: Student[];
+  attempts?: Attempt[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdById: string;
+};
+
+export const TestSchema: z.ZodType<Test> = z.lazy(() => z.object({
   id: z.string(),
   uid: z.string(),
   title: z.string(),
@@ -35,20 +72,21 @@ export const TestSchema = z.object({
   duration: z.number(),
   questions: z.array(QuestionSchema),
   students: z.array(StudentSchema).optional(),
+  attempts: z.array(AttemptSchema).optional(),
   isActive: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
   createdById: z.string(),
-});
+}));
 
-export type Test = z.infer<typeof TestSchema>;
-
-export const CreateTestSchema = TestSchema.omit({
-  id: true,
-  uid: true,
-  createdAt: true,
-  updatedAt: true,
-  createdById: true,
+export const CreateTestSchema = z.object({
+  title: z.string(),
+  description: z.string().optional(),
+  duration: z.number(),
+  questions: z.array(QuestionSchema),
+  students: z.array(StudentSchema).optional(),
+  attempts: z.array(AttemptSchema).optional(),
+  isActive: z.boolean(),
 });
 
 export type CreateTestDto = z.infer<typeof CreateTestSchema>;
