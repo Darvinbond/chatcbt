@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  role          Role      @default(TEACHER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  tests         Test[]
+  
+  @@index([email])
+}
+
+enum Role {
+  TEACHER
+  ADMIN
+}
+
+model Test {
+  id            String    @id @default(cuid())
+  uid           String    @unique @default(nanoid(10))
+  title         String
+  description   String?
+  duration      Int       // in minutes
+  questions     Json      // JSONB for question data
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  createdById   String
+  
+  students      Student[]
+  attempts      Attempt[]
+  
+  @@index([uid])
+  @@index([createdById])
+}
+
+model Student {
+  id            String    @id @default(cuid())
+  name          String
+  code          String    @unique
+  createdAt     DateTime  @default(now())
+  
+  test          Test      @relation(fields: [testId], references: [id], onDelete: Cascade)
+  testId        String
+  
+  attempts      Attempt[]
+  
+  @@index([code])
+  @@index([testId])
+}
+
+model Attempt {
+  id            String    @id @default(cuid())
+  answers       Json      // Student's answers
+  score         Float?
+  startedAt     DateTime  @default(now())
+  submittedAt   DateTime?
+  duration      Int?      // in seconds
+  
+  student       Student   @relation(fields: [studentId], references: [id])
+  studentId     String
+  
+  test          Test      @relation(fields: [testId], references: [id])
+  testId        String
+  
+  // Anti-cheat data
+  tabSwitches   Int       @default(0)
+  fullscreenExits Int     @default(0)
+  
+  @@index([studentId])
+  @@index([testId])
+  @@index([submittedAt])
+}
