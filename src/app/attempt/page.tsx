@@ -96,7 +96,7 @@ function Attempt() {
       <div className="flex flex-col items-center justify-center h-screen">
         <div className="w-full max-w-md p-8">
           <h1 className="text-2xl font-bold text-center">
-            {test?.title}
+            {"NAPPS C.A.S EXAMINATION" ?? test?.title}
           </h1>
           <p className="text-zinc-300 text-[14px] text-center">
             {test?.description}
