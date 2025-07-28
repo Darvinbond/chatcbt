@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,7 +148,9 @@ function Attempt() {
 export default function AttemptPage() {
   return (
     <TestProvider>
-      <Attempt />
+      <Suspense fallback={<div className="flex items-center justify-center h-screen"><p>Loading...</p></div>}>
+        <Attempt />
+      </Suspense>
     </TestProvider>
   );
 }
