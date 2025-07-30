@@ -37,9 +37,10 @@ export function DraggableOption({ option, onUpdate, onDelete }: DraggableOptionP
         onChange={(text) => onUpdate({ ...option, text })}
         className="flex-1 group"
       />
-      <button onClick={() => onDelete(option.id)} className="p-2 rounded-full hover:bg-zinc-100">
-        <X className="h-4 w-4 text-gray-400" />
-      </button>
+      <X
+        className="h-4 w-4 text-gray-400 cursor-pointer"
+        onClick={() => onDelete(option.id)}
+      />
     </Reorder.Item>
   );
 }

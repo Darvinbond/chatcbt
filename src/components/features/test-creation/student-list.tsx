@@ -65,17 +65,18 @@ export function StudentList({
               <div className="flex items-center gap-2">
                 <span className="text-sm text-zinc-500">{student.code}</span>
                 <div className="flex items-center gap-2 ml-5">
-                  <button onClick={() => handleCopyCode(student.code!)}>
+                  <button onClick={() => handleCopyCode(student.code!)} className="cursor-pointer">
                     <Copy className="h-4 w-4 text-zinc-600" />
                   </button>
                   {isDeleted ? (
                     <button
                       onClick={() => handleUndoDeleteStudent(student.id!)}
+                      className="cursor-pointer"
                     >
                       <RotateCcw className="h-4 w-4 text-zinc-600" />
                     </button>
                   ) : (
-                    <button onClick={() => handleDeleteStudent(student.id!)}>
+                    <button onClick={() => handleDeleteStudent(student.id!)} className="cursor-pointer">
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </button>
                   )}

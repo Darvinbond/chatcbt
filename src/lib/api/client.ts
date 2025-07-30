@@ -24,8 +24,8 @@ export class ApiClient {
     return this.request<T>('PATCH', `${this.baseUrl}${endpoint}`, body, options);
   }
 
-  async delete<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
-    return this.request<T>('DELETE', `${this.baseUrl}${endpoint}`, undefined, options);
+  async delete<T>(endpoint: string, body?: any, options?: RequestInit): Promise<ApiResponse<T>> {
+    return this.request<T>('DELETE', `${this.baseUrl}${endpoint}`, body, options);
   }
 
   private async request<T>(

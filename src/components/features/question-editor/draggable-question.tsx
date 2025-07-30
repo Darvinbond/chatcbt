@@ -63,14 +63,16 @@ export function DraggableQuestion({ question, onUpdate, onDelete, onUndoDelete, 
             {isDeleted ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-red-500">Deleted</span>
-                <button onClick={() => onUndoDelete(question.id)} className="p-2 rounded-full hover:bg-zinc-100">
-                  <Undo2 className="h-4 w-4 text-gray-400" />
-                </button>
+                <Undo2
+                  className="h-4 w-4 text-gray-400 cursor-pointer"
+                  onClick={() => onUndoDelete(question.id)}
+                />
               </div>
             ) : (
-              <button onClick={() => onDelete(question.id)} className="p-2 rounded-full hover:bg-zinc-100">
-                <Trash2 className="h-5 w-5 text-gray-400" />
-              </button>
+              <Trash2
+                className="h-5 w-5 text-gray-400 cursor-pointer"
+                onClick={() => onDelete(question.id)}
+              />
             )}
           </div>
           

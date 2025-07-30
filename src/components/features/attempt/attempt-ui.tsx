@@ -1,13 +1,12 @@
 "use client";
 
-"use client";
-
 import { useTestContext } from "@/components/providers/test-provider";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { testService } from "@/services/test.service";
 import { Question } from "@/types/test";
 import { cn } from "@/lib/utils";
+import { SubmitConfirmationModal } from "./submit-confirmation-modal";
 
 export function AttemptUI() {
   const {
@@ -21,13 +20,20 @@ export function AttemptUI() {
   } = useTestContext();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(test?.duration! * 60);
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
   useEffect(() => {
+    if (timeLeft === 0) {
+      if (test && student && student.id) {
+        testService.submitTest(test.id, student.id, answers);
+        clearTest();
+      }
+    }
     const timer = setInterval(() => {
       setTimeLeft((prev) => prev - 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [timeLeft, test, student, answers, clearTest]);
 
   const handleNextQuestion = () => {
     setCurrentQuestionIndex((prev) => prev + 1);
@@ -102,12 +108,7 @@ export function AttemptUI() {
             </Button>
             {currentQuestionIndex === questions.length - 1 ? (
               <Button
-                onClick={async () => {
-                  if (test && student && student.id) {
-                    await testService.submitTest(test.id, student.id, answers);
-                    clearTest();
-                  }
-                }}
+                onClick={() => setIsSubmitModalOpen(true)}
                 className="rounded-full"
               >
                 Finish
@@ -146,6 +147,16 @@ export function AttemptUI() {
           </div>
         </aside>
       </div>
+      <SubmitConfirmationModal
+        isOpen={isSubmitModalOpen}
+        onClose={() => setIsSubmitModalOpen(false)}
+        onConfirm={async () => {
+          if (test && student && student.id) {
+            await testService.submitTest(test.id, student.id, answers);
+            clearTest();
+          }
+        }}
+      />
     </div>
   );
 }

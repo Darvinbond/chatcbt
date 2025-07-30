@@ -20,6 +20,7 @@ import { AttemptsArtifact } from "@/components/artifacts/attempts-artifact";
 import { TestSettingsArtifact } from "@/components/artifacts/test-settings-artifact";
 import { toast } from "sonner";
 import AIPrompt from "@/components/kokonutui/ai-prompt";
+import { testService } from "@/services/test.service";
 
 async function fetchTest(testId: string): Promise<Test> {
   const response = await fetch(`/api/tests/${testId}`);
@@ -115,6 +116,21 @@ export default function TestDetailsPage() {
     },
     onError: () => {
       toast.error("Failed to save test settings. Please try again.");
+    },
+  });
+
+  const deleteAttemptsMutation = useMutation({
+    mutationFn: async (data: {
+      deletedAttemptIds: string[];
+    }) => {
+      await testService.deleteAttempts(data.deletedAttemptIds);
+    },
+    onSuccess: () => {
+      toast.success("Attempts deleted successfully");
+      hideArtifact();
+    },
+    onError: () => {
+      toast.error("Failed to delete attempts. Please try again.");
     },
   });
 
@@ -298,12 +314,31 @@ export default function TestDetailsPage() {
   const openAttemptsArtifact = useCallback(() => {
     if (!test) return;
 
+    const handleSave = (poolData: any) => {
+      const { deletedAttemptIds } = poolData || {};
+      if (deletedAttemptIds && deletedAttemptIds.length > 0) {
+        deleteAttemptsMutation.mutate({ deletedAttemptIds });
+      }
+    };
+
     showArtifact(
       <AttemptsArtifact attempts={test.attempts || []} test={test} />,
       "Attempts",
-      []
+      [
+        {
+          onClick: handleSave,
+          trigger: (
+            <Button key="save" className="rounded-full">
+              Save Changes
+            </Button>
+          ),
+        },
+      ],
+      {
+        deletedAttemptIds: [],
+      }
     );
-  }, [test, showArtifact]);
+  }, [test, showArtifact, deleteAttemptsMutation]);
 
   const openSettingsArtifact = useCallback(() => {
     if (!test) return;

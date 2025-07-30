@@ -39,6 +39,16 @@ class TestService {
   async attemptTest(testId: string, studentId: string) {
     return this.client.post(`/${testId}/attempt`, { studentId });
   }
+
+  async deleteAttempt(attemptId: string) {
+    const apiClient = new ApiClient('/api')
+    return apiClient.delete(`/attempts/${attemptId}`);
+  }
+
+  async deleteAttempts(attemptIds: string[]) {
+    const apiClient = new ApiClient('/api')
+    return apiClient.delete('/attempts', { attemptIds });
+  }
 }
 
 export const testService = new TestService()
