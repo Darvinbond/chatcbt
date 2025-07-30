@@ -10,6 +10,7 @@ import { Test, Student } from "@/types/test";
 import { TestProvider, useTestContext } from "@/components/providers/test-provider";
 import { AttemptUI } from "@/components/features/attempt/attempt-ui";
 import { testService } from "@/services/test.service";
+import { Loader2 } from "lucide-react";
 
 function Attempt() {
   const searchParams = useSearchParams();
@@ -74,7 +75,7 @@ function Attempt() {
   if (testExists === null) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p>Loading...</p>
+        <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     );
   }
@@ -148,7 +149,7 @@ function Attempt() {
 export default function AttemptPage() {
   return (
     <TestProvider>
-      <Suspense fallback={<div className="flex items-center justify-center h-screen"><p>Loading...</p></div>}>
+      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
         <Attempt />
       </Suspense>
     </TestProvider>

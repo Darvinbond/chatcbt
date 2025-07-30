@@ -20,7 +20,9 @@ export function CongratulationsModal({
   onClose,
 }: CongratulationsModalProps) {
   const handleClose = () => {
-    window.history.replaceState({}, "", window.location.pathname);
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.delete("ref");
+    window.history.replaceState({}, "", `${window.location.pathname}?${urlParams.toString()}`);
     onClose();
   };
 
