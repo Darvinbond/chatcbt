@@ -1,8 +1,8 @@
-# EduTest Pro
+# ChatCBT
 
-EduTest Pro is a modern, AI-powered platform for creating, administering, and managing online tests and assessments. It is designed for educators and institutions to streamline the testing process with a focus on security, ease of use, and advanced features.
+ChatCBT is an intelligent platform that helps educators and organizations create and manage online tests. Think of it as a smart assistant for making exams: you can provide materials like documents or text, and our AI will help generate questions. It's built to be secure and easy for everyone to use, whether you're a teacher setting up a quiz or a student taking a test.
 
-![EduTest Pro Dashboard](readme_assets/DASH.png)
+![ChatCBT Dashboard](readme_assets/DASH.png)
 
 ## Key Features
 
@@ -13,7 +13,7 @@ EduTest Pro is a modern, AI-powered platform for creating, administering, and ma
 - **Real-time Attempt Monitoring:** Track student attempts in real-time, including scores, submission times, and anti-cheating flags.
 - **Intuitive User Interface:** A clean and modern UI built with Next.js and Tailwind CSS for a seamless user experience.
 
-![EduTest Pro Test UI](readme_assets/CBTUI.png)
+![ChatCBT Test UI](readme_assets/CBTUI.png)
 
 ## Tech Stack
 
@@ -42,8 +42,8 @@ To get a local copy up and running, follow these simple steps.
 
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/your-username/edutest-pro.git
-   cd edutest-pro
+   git clone https://github.com/your-username/chat-cbt.git
+   cd chat-cbt
    ```
 
 2. **Install dependencies:**
