@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EduTest Pro
+
+EduTest Pro is a modern, AI-powered platform for creating, administering, and managing online tests and assessments. It is designed for educators and institutions to streamline the testing process with a focus on security, ease of use, and advanced features.
+
+![EduTest Pro Dashboard](readme_assets/DASH.png)
+
+## Key Features
+
+- **AI-Powered Question Generation:** Automatically generate test questions from various sources, including text, PDFs, and other documents.
+- **Secure Testing Environment:** Features anti-cheating measures such as tab switch detection and fullscreen exit monitoring to ensure test integrity.
+- **Customizable Tests:** Create tests with custom titles, descriptions, and time limits.
+- **Student Management:** Easily manage student lists for each test, with support for bulk student uploads via CSV.
+- **Real-time Attempt Monitoring:** Track student attempts in real-time, including scores, submission times, and anti-cheating flags.
+- **Intuitive User Interface:** A clean and modern UI built with Next.js and Tailwind CSS for a seamless user experience.
+
+![EduTest Pro Test UI](readme_assets/CBTUI.png)
+
+## Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org/)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Database:** [PostgreSQL](https://www.postgresql.org/) with [Prisma](https://www.prisma.io/)
+- **Authentication:** [Supabase](https://supabase.io/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **AI:** [Google Gemini](https://ai.google.dev/)
+- **State Management:** [React Query](https://tanstack.com/query/v5)
+- **Form Handling:** [React Hook Form](https://react-hook-form.com/)
+- **File Parsing:** [Papaparse](https://www.papaparse.com/), [XLSX](https://sheetjs.com/)
 
 ## Getting Started
 
-First, run the development server:
+To get a local copy up and running, follow these simple steps.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### Prerequisites
+
+- Node.js (v20 or later)
+- Yarn or npm
+- A PostgreSQL database
+- A Supabase project for authentication
+
+### Installation
+
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/your-username/edutest-pro.git
+   cd edutest-pro
+   ```
+
+2. **Install dependencies:**
+   ```sh
+   npm install
+   # or
+   yarn install
+   ```
+
+3. **Set up environment variables:**
+   Create a `.env` file in the root of the project and add the following environment variables:
+   ```env
+   DATABASE_URL="your-postgresql-database-url"
+   DIRECT_URL="your-postgresql-direct-database-url"
+   NEXT_PUBLIC_SUPABASE_URL="your-supabase-project-url"
+   NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+   GEMINI_API_KEY="your-google-gemini-api-key"
+   ```
+
+4. **Run database migrations:**
+   ```sh
+   npx prisma migrate dev
+   ```
+
+5. **Run the development server:**
+   ```sh
+   npm run dev
+   ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The project is organized into the following directories:
 
-## Learn More
+- `src/app`: Contains the application's pages and API routes.
+- `src/components`: Contains reusable React components, organized by feature and UI elements.
+- `src/lib`: Contains shared libraries and utility functions, including API clients, database configuration, and security helpers.
+- `src/services`: Contains services for interacting with external APIs and handling business logic.
+- `prisma`: Contains the Prisma schema and database migration files.
+- `public`: Contains static assets, such as images and fonts.
 
-To learn more about Next.js, take a look at the following resources:
+## License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the MIT License. See the `LICENSE` file for more information.
