@@ -69,17 +69,17 @@ model Attempt {
   startedAt     DateTime  @default(now())
   submittedAt   DateTime?
   duration      Int?      // in seconds
-  
-  student       Student   @relation(fields: [studentId], references: [id])
+
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   studentId     String
-  
-  test          Test      @relation(fields: [testId], references: [id])
+
+  test          Test      @relation(fields: [testId], references: [id], onDelete: Cascade)
   testId        String
-  
+
   // Anti-cheat data
   tabSwitches   Int       @default(0)
   fullscreenExits Int     @default(0)
-  
+
   @@index([studentId])
   @@index([testId])
   @@index([submittedAt])

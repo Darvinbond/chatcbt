@@ -13,9 +13,9 @@ interface DashboardLayoutProps {
 
 function Layout({ children }: DashboardLayoutProps) {
   return (
-    <div className="flex h-screen bg-white text-black">
+    <div className="flex h-screen overscroll-none overflow-hidden bg-white text-black">
       <Sidebar />
-      <div className="flex-1 h-full overflow-y-auto flex flex-col">
+      <div id="dashboard-scroll-container" className="flex-1 h-full overscroll-none overflow-y-auto flex flex-col">
         <Header />
         <main className="flex-1">{children}</main>
       </div>

@@ -21,7 +21,7 @@ export function Header() {
   };
 
   return (
-    <header className="h-14 px-4 flex items-center justify-between bg-white sticky top-0 shrink-0">
+    <header className="h-14 z-50 px-4 flex items-center justify-between dbg-white sticky top-0 shrink-0">
       <div className="flex items-center gap-2">
         {isArtifactVisible ? (
           <>

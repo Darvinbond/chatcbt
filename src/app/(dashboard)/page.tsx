@@ -18,7 +18,10 @@ import { TestDurationForm } from "@/components/features/test-creation/test-durat
 import { Question, Student } from "@/types/test";
 import { cn } from "@/lib/utils";
 import { useArtifact } from "@/components/providers/artifact-provider";
-import { ChatMessages, Message } from "@/components/features/chat/chat-messages";
+import {
+  ChatMessages,
+  Message,
+} from "@/components/features/chat/chat-messages";
 import { ChatContainer } from "@/components/features/chat/chat-container";
 
 export default function DashboardPage() {
@@ -41,13 +44,6 @@ export default function DashboardPage() {
   useEffect(() => {
     studentsRef.current = students;
   }, [students]);
-
-  useEffect(() => {
-    chatContainerRef.current?.scrollTo(
-      0,
-      chatContainerRef.current.scrollHeight
-    );
-  }, [messages]);
 
   useEffect(() => {
     if (isArtifactVisible) {
@@ -172,7 +168,25 @@ export default function DashboardPage() {
     },
   });
 
+  // Auto-scroll to bottom whenever messages change or loading state changes
+  useEffect(() => {
+    // Find the scrolling container by ID
+    const scrollContainer = document.getElementById('dashboard-scroll-container') as HTMLElement;
+    if (scrollContainer) {
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(() => {
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: "smooth"
+        });
+      }, 100);
+    }
+  }, [messages, processMutation.isPending]);
+
   const handlePromptSubmit = (value: string, mode: string) => {
+    console.log("Submitting prompt:", value, mode);
+    // Add user message immediately so layout switches to chat view
+    addMessage("user", value);
     processMutation.mutate({ content: value, mode });
   };
 
@@ -210,37 +224,25 @@ export default function DashboardPage() {
   };
 
   const handleNameSubmit = (name: string) => {
-    // Use ref to get current questions
-    console.log(
-      "handleNameSubmit called. Current questions:",
-      questionsRef.current
-    );
+    console.log("🔥 QUESTO: handleNameSubmit called with:", name);
     addMessage("user-action", <p>{name}</p>);
     addMessage(
       "system",
-      <TestDescriptionForm onSubmit={handleDescriptionSubmit} />
+      <TestDescriptionForm onSubmit={(description: string) => handleDescriptionSubmit(name, description)} />
     );
   };
 
-  const handleDescriptionSubmit = (description: string) => {
-    // Use ref to get current questions
-    console.log(
-      "handleDescriptionSubmit called. Current questions:",
-      questionsRef.current
-    );
+  const handleDescriptionSubmit = (name: string, description: string) => {
+    console.log("handleDescriptionSubmit called. Name:", name, "Description:", description);
     addMessage("user-action", <p>{description}</p>);
-    addMessage("system", <TestDurationForm onSubmit={handleDurationSubmit} />);
+    addMessage("system", <TestDurationForm onSubmit={(duration: number) => handleDurationSubmit(name, description, duration)} />);
   };
 
-  const handleDurationSubmit = (duration: number) => {
-    // Use ref to get current questions
-    console.log(
-      "handleDurationSubmit called. Current questions:",
-      questionsRef.current
-    );
+  const handleDurationSubmit = (name: string, description: string, duration: number) => {
+    console.log("handleDurationSubmit called. Name:", name, "Description:", description, "Duration:", duration);
     addMessage("user-action", <p>{duration} minutes</p>);
 
-    const finalDetails = { name: "Untitled Test", description: "", duration };
+    const finalDetails = { name, description, duration };
     handleTestCreation(finalDetails);
   };
 
@@ -296,30 +298,57 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="h-max flex flex-col">
-      <ChatContainer isArtifactVisible={isArtifactVisible}>
-        {processMutation.isPending ? (
-          <div className="flex items-center justify-center h-full">
-            <AILoadingState taskSequences={generatingQuestions} />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="w-full max-w-2xl mx-auto text-center pt-20">
-            <h1 className="text-4xl font-bold mb-8 text-black">
-              EduTest Pro
-            </h1>
-            <p className="text-lg text-gray-600">
-              Start by pasting text, or uploading a file to generate your
-              test.
-            </p>
-          </div>
-        ) : (
-          <ChatMessages messages={messages} isArtifactVisible={isArtifactVisible} />
+    <div className={cn("h-full relative")}>
+      <div
+        className={cn(
+          "h-full flex flex-col relative",
+          // When no messages, center the header + input together
+          messages.length === 0 && "justify-center"
         )}
-      </ChatContainer>
-      <div className="sticky bottom-0 left-0 right-0 p-4">
-        <div className="max-w-2xl mx-auto">
-          <AIPrompt onSubmit={handlePromptSubmit} />
-        </div>
+      >
+        {messages.length > 0 && (
+          <>
+            {/* Top content area - takes remaining height, scrolls internally */}
+            <div className="flex-1 h-max">
+              {processMutation.isPending ? (
+                <div className="flex flex-col dmin-h-full">
+                  <ChatContainer isArtifactVisible={isArtifactVisible}>
+                    <ChatMessages
+                      messages={messages}
+                      isArtifactVisible={isArtifactVisible}
+                    />
+                  </ChatContainer>
+                  <div className="flex-1 flex items-center justify-center">
+                    <AILoadingState taskSequences={generatingQuestions} />
+                  </div>
+                </div>
+              ) : (
+                <ChatContainer isArtifactVisible={isArtifactVisible}>
+                  <ChatMessages
+                    messages={messages}
+                    isArtifactVisible={isArtifactVisible}
+                  />
+                </ChatContainer>
+              )}
+            </div>
+
+            {/* Input area - sticky at bottom when there are messages */}
+            <div className="sticky bottom-0 left-0 right-0 p-4 bg-background">
+              <div className="max-w-2xl mx-auto w-full">
+                <AIPrompt onSubmit={handlePromptSubmit} showHeader={false} />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Input area - centered with header when no messages */}
+        {messages.length === 0 && (
+          <div className="p-4">
+            <div className="max-w-2xl mx-auto w-full">
+              <AIPrompt onSubmit={handlePromptSubmit} showHeader={true} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
