@@ -27,6 +27,7 @@ export function TestDescriptionForm({ onSubmit }: TestDescriptionFormProps) {
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          placeholder="Describe the test purpose and content..."
           disabled={isSubmitted}
         />
       </div>

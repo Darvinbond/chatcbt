@@ -18,6 +18,7 @@ import { TestDurationForm } from "@/components/features/test-creation/test-durat
 import { Question, Student } from "@/types/test";
 import { cn } from "@/lib/utils";
 import { useArtifact } from "@/components/providers/artifact-provider";
+import { useSidebar } from "@/components/providers/sidebar-provider";
 import {
   ChatMessages,
   Message,
@@ -27,6 +28,7 @@ import { ChatContainer } from "@/components/features/chat/chat-container";
 export default function DashboardPage() {
   const router = useRouter();
   const { isOpen: isArtifactVisible, show: showArtifact } = useArtifact();
+  const { refresh } = useSidebar();
   const [messages, setMessages] = useState<Message[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [students, setStudents] = useState<string[]>([]);
@@ -84,18 +86,23 @@ export default function DashboardPage() {
   };
 
   const processMutation = useMutation({
-    mutationFn: async (data: { content: string; mode: string }) => {
+    mutationFn: async (data: { content: string; mode: string; loadingMessageId: string }) => {
+      const { loadingMessageId, ...rest } = data;
       const response = await fetch("/api/ai/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(rest),
       });
       if (!response.ok) throw new Error("Processing failed");
-      return response.json();
+      const result = await response.json();
+      return { ...result, loadingMessageId };
     },
     onSuccess: (data) => {
-      if (data?.data?.questions) {
-        const newQuestions = data.data.questions;
+      const result = data;
+      const loadingMessageId = result.loadingMessageId;
+
+      if (result.data?.questions && result.data.questions.length > 0) {
+        const newQuestions = result.data.questions;
         setQuestions(newQuestions);
 
         const openArtifact = () => {
@@ -127,43 +134,63 @@ export default function DashboardPage() {
           );
         };
 
-        addMessage(
-          "system",
-          <div className="space-y-2">
-            <button
-              onClick={openArtifact}
-              className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors"
-            >
-              <BookText className="h-5 w-5" />
-              <span className="font-medium text-sm">CBT Test Questions</span>
-            </button>
-            <p className="text-sm text-black">
-              Here are the questions generated from your content. You can edit,
-              reorder, or add new questions before proceeding.
-            </p>
-          </div>
-        );
-
-        addMessage(
-          "system",
-          <div className="flex justify-start items-center gap-2">
-            <Button
-              onClick={handleTryAgain}
-              variant="outline"
-              className="rounded-full"
-            >
-              Try Again
-            </Button>
-            <Button onClick={handleSaveQuestions} className="rounded-full">
-              Save & Continue
-            </Button>
-          </div>
+        // Replace loading message with response messages
+        setMessages((prev) =>
+          prev.filter((msg) => msg.id !== loadingMessageId).concat([
+            {
+              id: uuidv4(),
+              sender: "system",
+              content: (
+                <div className="space-y-2">
+                  <Button
+                    onClick={openArtifact}
+                    variant="secondary"
+                    className="flex items-center gap-2 p-3 rounded-2xl"
+                  >
+                    <BookText className="h-5 w-5" />
+                    <span className="font-medium text-sm">Click to view questions</span>
+                  </Button>
+                  <p className="text-sm text-black">
+                    Here are the questions generated from your content. You can edit,
+                    reorder, or add new questions before proceeding.
+                  </p>
+                </div>
+              )
+            },
+            {
+              id: uuidv4(),
+              sender: "system",
+              content: (
+                <div className="flex justify-start items-center gap-2">
+                  <Button
+                    onClick={handleTryAgain}
+                    variant="outline"
+                    className="rounded-full"
+                  >
+                    Try Again
+                  </Button>
+                  <Button onClick={handleSaveQuestions} className="rounded-full">
+                    Save & Continue
+                  </Button>
+                </div>
+              )
+            }
+          ])
         );
       } else {
-        toast.error("AI did not return valid questions.");
+        // Replace loading message with error message
+        setMessages((prev) =>
+          prev.filter((msg) => msg.id !== loadingMessageId).concat({
+            id: uuidv4(),
+            sender: "system",
+            content: "No questions could be generated from the content provided. Please try with different content or try again.",
+          })
+        );
       }
     },
-    onError: () => {
+    onError: (error, variables) => {
+      const loadingMessageId = variables.loadingMessageId;
+      setMessages((prev) => prev.filter((msg) => msg.id !== loadingMessageId));
       toast.error("Failed to process content. Please try again.");
     },
   });
@@ -187,7 +214,18 @@ export default function DashboardPage() {
     console.log("Submitting prompt:", value, mode);
     // Add user message immediately so layout switches to chat view
     addMessage("user", value);
-    processMutation.mutate({ content: value, mode });
+    // Add loading message
+    const loadingMessage = {
+      id: uuidv4(),
+      sender: "system" as const,
+      content: (
+        <div className="animate-pulse">
+          <div className="w-4 h-4 bg-black rounded-full" />
+        </div>
+      ),
+    };
+    setMessages((prev) => [...prev, loadingMessage]);
+    processMutation.mutate({ content: value, mode, loadingMessageId: loadingMessage.id });
   };
 
   const handleTryAgain = () => {
@@ -209,17 +247,14 @@ export default function DashboardPage() {
     );
   };
 
-  const handleStudentsUploaded = (uploadedStudents: string[]) => {
+  const handleStudentsUploaded = (uploadedStudents: string[], fileName: string) => {
     // Use ref to get current questions
     console.log(
       "handleStudentsUploaded called. Current questions:",
       questionsRef.current
     );
     setStudents(uploadedStudents);
-    addMessage(
-      "user-action",
-      <p>{uploadedStudents.length} students uploaded.</p>
-    );
+    addMessage("user-action", <p>Uploaded {fileName}</p>);
     addMessage("system", <TestNameForm onSubmit={handleNameSubmit} />);
   };
 
@@ -240,7 +275,6 @@ export default function DashboardPage() {
 
   const handleDurationSubmit = (name: string, description: string, duration: number) => {
     console.log("handleDurationSubmit called. Name:", name, "Description:", description, "Duration:", duration);
-    addMessage("user-action", <p>{duration} minutes</p>);
 
     const finalDetails = { name, description, duration };
     handleTestCreation(finalDetails);
@@ -253,29 +287,94 @@ export default function DashboardPage() {
       duration: number;
       questions: Question[];
       students: string[];
+      loadingMessageId: string;
     }) => {
+      const { loadingMessageId, ...rest } = data;
       const response = await fetch("/api/tests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(rest),
       });
       if (!response.ok) throw new Error("Test creation failed");
       return response.json();
     },
-    onSuccess: (data) => {
-      toast.success("Test created successfully!");
-      router.push(`/t/${data.data.id}`);
+    onSuccess: (data, variables) => {
+      // Refresh sidebar tests immediately
+      refresh();
+      // Replace loading message with success message
+      setMessages((prev) =>
+        prev.filter((msg) => msg.id !== variables.loadingMessageId).concat({
+          id: uuidv4(),
+          sender: "system",
+          content: "Test created successfully! Redirecting...",
+        })
+      );
+      setTimeout(() => router.push(`/t/${data.data.id}`), 1000);
     },
-    onError: () => {
-      toast.error("Failed to create test. Please try again.");
+    onError: (error, variables) => {
+      // Replace loading message with error message and try again button
+      setMessages((prev) =>
+        prev.filter((msg) => msg.id !== variables.loadingMessageId).concat({
+          id: uuidv4(),
+          sender: "system",
+          content: (
+            <div className="space-y-2">
+              <p>Failed to create the test. Please try again.</p>
+              <Button
+                variant="default"
+                className="rounded-full"
+                onClick={() => retryCreateTest(variables)}
+              >
+                Try Again
+              </Button>
+            </div>
+          ),
+        })
+      );
     },
   });
+
+  const retryCreateTest = (details: any) => {
+    // Add new loading message and retry
+    const loadingMessage = {
+      id: uuidv4(),
+      sender: "system" as const,
+      content: (
+        <div className="animate-pulse">
+          <div className="w-4 h-4 bg-black rounded-full" />
+        </div>
+      ),
+    };
+    setMessages((prev) => [...prev, loadingMessage]);
+    const finalQuestions = questionsRef.current;
+    const finalStudents = studentsRef.current;
+    createTestMutation.mutate({
+      title: details.title,
+      description: details.description,
+      duration: details.duration,
+      questions: finalQuestions,
+      students: finalStudents,
+      loadingMessageId: loadingMessage.id,
+    });
+  };
 
   const handleTestCreation = async (details: {
     name: string;
     description: string;
     duration: number;
   }) => {
+    // Add loading message
+    const loadingMessage = {
+      id: uuidv4(),
+      sender: "system" as const,
+      content: (
+        <div className="animate-pulse">
+          <div className="w-4 h-4 bg-black rounded-full" />
+        </div>
+      ),
+    };
+    setMessages((prev) => [...prev, loadingMessage]);
+
     // Use refs to get current values
     const finalQuestions = questionsRef.current;
     const finalStudents = studentsRef.current;
@@ -294,6 +393,7 @@ export default function DashboardPage() {
       duration: details.duration,
       questions: finalQuestions,
       students: finalStudents,
+      loadingMessageId: loadingMessage.id,
     });
   };
 
@@ -310,26 +410,12 @@ export default function DashboardPage() {
           <>
             {/* Top content area - takes remaining height, scrolls internally */}
             <div className="flex-1 h-max">
-              {processMutation.isPending ? (
-                <div className="flex flex-col dmin-h-full">
-                  <ChatContainer isArtifactVisible={isArtifactVisible}>
-                    <ChatMessages
-                      messages={messages}
-                      isArtifactVisible={isArtifactVisible}
-                    />
-                  </ChatContainer>
-                  <div className="flex-1 flex items-center justify-center">
-                    <AILoadingState taskSequences={generatingQuestions} />
-                  </div>
-                </div>
-              ) : (
-                <ChatContainer isArtifactVisible={isArtifactVisible}>
-                  <ChatMessages
-                    messages={messages}
-                    isArtifactVisible={isArtifactVisible}
-                  />
-                </ChatContainer>
-              )}
+              <ChatContainer isArtifactVisible={isArtifactVisible}>
+                <ChatMessages
+                  messages={messages}
+                  isArtifactVisible={isArtifactVisible}
+                />
+              </ChatContainer>
             </div>
 
             {/* Input area - sticky at bottom when there are messages */}

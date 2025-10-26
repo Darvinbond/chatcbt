@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 export interface Action {
   onClick: (poolData: any) => void;
   trigger: ReactNode;
+  isLoading?: boolean;
 }
 
 interface ArtifactContextType {
@@ -22,6 +23,8 @@ interface ArtifactContextType {
   actions: Action[];
   poolData: any;
   setPoolData: (data: any) => void;
+  isLoadingIndex: number | null;
+  setIsLoadingIndex: (idx: number | null) => void;
   show: (
     content: ReactNode,
     title: string,
@@ -41,6 +44,7 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
   const [title, setTitle] = useState("");
   const [actions, setActions] = useState<Action[]>([]);
   const [poolData, setPoolData] = useState<any>(null);
+  const [isLoadingIndex, setIsLoadingIndex] = useState<number | null>(null);
 
   const setPoolDataCallback = useCallback((data: any) => {
     setPoolData(data);
@@ -85,6 +89,8 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
         actions,
         poolData,
         setPoolData: setPoolDataCallback,
+        isLoadingIndex,
+        setIsLoadingIndex,
         show,
         hide,
       }}

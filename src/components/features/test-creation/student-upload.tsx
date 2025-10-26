@@ -8,22 +8,19 @@ import { Button } from "@/components/ui/button";
 import { parseStudentData } from "@/services/file/parser.service";
 
 interface StudentUploadProps {
-  onStudentsUploaded: (studentNames: string[]) => void;
+  onStudentsUploaded: (studentNames: string[], fileName: string) => void;
 }
 
 export function StudentUpload({ onStudentsUploaded }: StudentUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleProcess = async () => {
-    if (!file) {
-      toast.error("Please upload an Excel file.");
-      return;
-    }
+  const handleUploadSuccess = async (uploadedFile: File) => {
+    setFile(uploadedFile);
     try {
-      const studentNames = await parseStudentData(file);
+      const studentNames = await parseStudentData(uploadedFile);
       toast.success(`${studentNames.length} students processed successfully.`);
-      onStudentsUploaded(studentNames);
+      onStudentsUploaded(studentNames, uploadedFile.name);
       setIsSubmitted(true);
     } catch (error: any) {
       toast.error(error.message || "Failed to process student data.");
@@ -34,16 +31,13 @@ export function StudentUpload({ onStudentsUploaded }: StudentUploadProps) {
     <div className="w-full">
       <div className={cn(isSubmitted && "pointer-events-none opacity-50")}>
         <FileUpload
-          onUploadSuccess={(file) => setFile(file)}
-          acceptedFileTypes={["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv"]}
+          onUploadSuccess={handleUploadSuccess}
+          acceptedFileTypes={["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]}
           className="mb-4"
+          currentFile={file}
+          uploadDelay={0}
         />
       </div>
-      {!isSubmitted && (
-        <Button onClick={handleProcess} className="w-max mt-4 rounded-full">
-          Process Students
-        </Button>
-      )}
     </div>
   );
 }

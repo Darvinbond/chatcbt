@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       const tests = await prisma.$transaction(async (tx) => {
         return await tx.test.findMany({
           where: { createdById: appUser.id },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: 'desc' },
         });
       });
       

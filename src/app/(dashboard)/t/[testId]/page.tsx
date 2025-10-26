@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Test, Student } from "@/types/test";
 import { QuestionEditor } from "@/components/features/question-editor/question-editor";
 import AILoadingState from "@/components/kokonutui/ai-loading";
@@ -10,9 +10,9 @@ import {
   Message,
 } from "@/components/features/chat/chat-messages";
 import { useArtifact } from "@/components/providers/artifact-provider";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { BookText, User, Settings, History } from "lucide-react";
+import { BookText, User, Settings, History, Loader2 } from "lucide-react";
 import { ChatContainer } from "@/components/features/chat/chat-container";
 import { Button } from "@/components/ui/button";
 import { StudentsArtifact } from "@/components/artifacts/students-artifact";
@@ -33,16 +33,19 @@ async function fetchTest(testId: string): Promise<Test> {
 
 export default function TestDetailsPage() {
   const { testId } = useParams();
+  const queryClient = useQueryClient();
   const {
     isOpen: isArtifactVisible,
     show: showArtifact,
     hide: hideArtifact,
     poolData,
     setPoolData,
+    setIsLoadingIndex,
   } = useArtifact();
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesInitialized = useRef(false);
-  const { data: test, isLoading } = useQuery({
+  const messageId = useRef(uuidv4());
+  const { data: test, isLoading, isFetching } = useQuery({
     queryKey: ["test", testId],
     queryFn: () => fetchTest(testId as string),
     enabled: !!testId,
@@ -63,10 +66,13 @@ export default function TestDetailsPage() {
       return response.json();
     },
     onSuccess: (data) => {
+      setIsLoadingIndex(null);
       toast.success(data.message);
-      hideArtifact();
+      queryClient.invalidateQueries({ queryKey: ['test', testId] });
+      setTimeout(() => hideArtifact(), 200);
     },
     onError: () => {
+      setIsLoadingIndex(null);
       toast.error("Failed to save students. Please try again.");
     },
   });
@@ -87,10 +93,13 @@ export default function TestDetailsPage() {
       return response.json();
     },
     onSuccess: (data) => {
+      setIsLoadingIndex(null);
       toast.success(data.message);
-      hideArtifact();
+      queryClient.invalidateQueries({ queryKey: ['test', testId] });
+      setTimeout(() => hideArtifact(), 200);
     },
     onError: () => {
+      setIsLoadingIndex(null);
       toast.error("Failed to save questions. Please try again.");
     },
   });
@@ -111,10 +120,13 @@ export default function TestDetailsPage() {
       return response.json();
     },
     onSuccess: (data) => {
+      setIsLoadingIndex(null);
       toast.success(data.message);
-      hideArtifact();
+      queryClient.invalidateQueries({ queryKey: ['test', testId] });
+      setTimeout(() => hideArtifact(), 200);
     },
     onError: () => {
+      setIsLoadingIndex(null);
       toast.error("Failed to save test settings. Please try again.");
     },
   });
@@ -126,16 +138,19 @@ export default function TestDetailsPage() {
       await testService.deleteAttempts(data.deletedAttemptIds);
     },
     onSuccess: () => {
+      setIsLoadingIndex(null);
       toast.success("Attempts deleted successfully");
-      hideArtifact();
+      queryClient.invalidateQueries({ queryKey: ['test', testId] });
+      setTimeout(() => hideArtifact(), 200);
     },
     onError: () => {
+      setIsLoadingIndex(null);
       toast.error("Failed to delete attempts. Please try again.");
     },
   });
 
   const chatMutation = useMutation({
-    mutationFn: async (data: { query: string; history: Message[] }) => {
+    mutationFn: async (data: { query: string; history: Message[]; loadingMessageId: string }) => {
       const response = await fetch(`/api/tests/${testId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -144,18 +159,22 @@ export default function TestDetailsPage() {
       if (!response.ok) throw new Error("Failed to get chat response");
       return response.json();
     },
-    onSuccess: (data) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uuidv4(),
-          sender: "system-llm-response",
-          fullWidth: true,
-          content: data.data.response,
-        },
-      ]);
+    onSuccess: (data, variables) => {
+      const loadingMessageId = variables.loadingMessageId;
+      setMessages((prev) =>
+        prev
+          .filter((msg) => msg.id !== loadingMessageId)
+          .concat({
+            id: uuidv4(),
+            sender: "system-llm-response",
+            fullWidth: true,
+            content: data.data.response,
+          })
+      );
     },
-    onError: () => {
+    onError: (error, variables) => {
+      const loadingMessageId = variables.loadingMessageId;
+      setMessages((prev) => prev.filter((msg) => msg.id !== loadingMessageId));
       toast.error("Failed to get chat response. Please try again.");
     },
   });
@@ -179,6 +198,7 @@ export default function TestDetailsPage() {
     };
 
     const handleSave = (poolData: any) => {
+      setIsLoadingIndex(1);
       const { questions, deletedQuestionIds } = poolData || {};
       const initialQuestions = test?.questions || [];
 
@@ -193,16 +213,16 @@ export default function TestDetailsPage() {
         const initialQuestion = initialQuestions.find(
           (iq: any) => iq.id === q.id
         );
-        
+
         if (!initialQuestion) return true; // New question
-        
+
         const sameQuestion = q.question === initialQuestion.question;
         const sameOptions = q.options.length === initialQuestion.options.length &&
           q.options.every((o: any, index: number) => {
             const io = initialQuestion.options[index];
             return io && io.id === o.id && io.text === o.text;
           });
-        
+
         return !(sameQuestion && sameOptions); // Return true if something changed
       });
 
@@ -233,6 +253,7 @@ export default function TestDetailsPage() {
               Save Changes
             </Button>
           ),
+          isLoading: saveQuestionsMutation.isPending,
         },
       ],
       {
@@ -261,6 +282,7 @@ export default function TestDetailsPage() {
     };
 
     const handleSave = (poolData: any) => {
+      setIsLoadingIndex(1);
       const { students, deletedStudentIds } = poolData || {};
       const newStudents = students.filter(
         (student: Student) => !test.students?.find((s) => s.id === student.id)
@@ -303,6 +325,7 @@ export default function TestDetailsPage() {
               Save Changes
             </Button>
           ),
+          isLoading: saveStudentsMutation.isPending,
         },
       ],
       {
@@ -315,6 +338,7 @@ export default function TestDetailsPage() {
     if (!test) return;
 
     const handleSave = (poolData: any) => {
+      setIsLoadingIndex(0);
       const { deletedAttemptIds } = poolData || {};
       if (deletedAttemptIds && deletedAttemptIds.length > 0) {
         deleteAttemptsMutation.mutate({ deletedAttemptIds });
@@ -332,6 +356,7 @@ export default function TestDetailsPage() {
               Save Changes
             </Button>
           ),
+          isLoading: deleteAttemptsMutation.isPending,
         },
       ],
       {
@@ -344,6 +369,7 @@ export default function TestDetailsPage() {
     if (!test) return;
 
     const handleSave = (poolData: any) => {
+      setIsLoadingIndex(0);
       saveTestSettingsMutation.mutate({
         testId: testId as string,
         ...poolData,
@@ -361,6 +387,7 @@ export default function TestDetailsPage() {
               Save Changes
             </Button>
           ),
+          isLoading: saveTestSettingsMutation.isPending,
         },
       ],
       {
@@ -371,84 +398,91 @@ export default function TestDetailsPage() {
     );
   }, [test, showArtifact, saveTestSettingsMutation, testId]);
 
+  const messageContent = useMemo(() => {
+    if (!test) return null;
+    return (
+      <div className="flex flex-wrap gap-4">
+        <button
+          onClick={openQuestionsArtifact}
+          className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
+        >
+          <BookText className="h-5 w-5" />
+          <div className="text-left">
+            <span className="font-medium text-sm text-black">
+              Questions
+            </span>
+            <p className="text-xs text-zinc-500">
+              {test.questions.length} Questions
+            </p>
+          </div>
+        </button>
+        <button
+          onClick={openStudentsArtifact}
+          className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
+        >
+          <User className="h-5 w-5" />
+          <div className="text-left">
+            <span className="font-medium text-sm text-black">
+              Students
+            </span>
+            <p className="text-xs text-zinc-500">
+              {test.students?.length || 0} Students
+            </p>
+          </div>
+        </button>
+        <button
+          onClick={openSettingsArtifact}
+          className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
+        >
+          <Settings className="h-5 w-5" />
+          <div className="text-left">
+            <span className="font-medium text-sm text-black">
+              Test Settings
+            </span>
+            <p className="text-xs text-zinc-500">
+              {test.duration} minutes test
+            </p>
+          </div>
+        </button>
+        <button
+          onClick={openAttemptsArtifact}
+          className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
+        >
+          <History className="h-5 w-5" />
+          <div className="text-left">
+            <span className="font-medium text-sm text-black">
+              Attempts
+            </span>
+            <p className="text-xs text-zinc-500">
+              {test.attempts?.length || 0} Attempts
+            </p>
+          </div>
+        </button>
+      </div>
+    );
+  }, [test?.questions?.length, test?.students?.length, test?.attempts?.length, test?.duration,]);
+
   useEffect(() => {
-    // Only initialize messages once when test is loaded
-    if (test && !messagesInitialized.current) {
+    // Initialize and update messages when content changes
+    if (messageContent) {
       messagesInitialized.current = true;
       setMessages([
         {
-          id: uuidv4(),
+          id: messageId.current,
           sender: "system",
           fullWidth: true,
-          content: (
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={openQuestionsArtifact}
-                className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
-              >
-                <BookText className="h-5 w-5" />
-                <div className="text-left">
-                  <span className="font-medium text-sm text-black">
-                    Questions
-                  </span>
-                  <p className="text-xs text-zinc-500">
-                    {test.questions.length} Questions
-                  </p>
-                </div>
-              </button>
-              <button
-                onClick={openStudentsArtifact}
-                className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
-              >
-                <User className="h-5 w-5" />
-                <div className="text-left">
-                  <span className="font-medium text-sm text-black">
-                    Students
-                  </span>
-                  <p className="text-xs text-zinc-500">
-                    {test.students?.length || 0} Students
-                  </p>
-                </div>
-              </button>
-              <button
-                onClick={openSettingsArtifact}
-                className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
-              >
-                <Settings className="h-5 w-5" />
-                <div className="text-left">
-                  <span className="font-medium text-sm text-black">
-                    Test Settings
-                  </span>
-                  <p className="text-xs text-zinc-500">
-                    {test.duration} minutes test
-                  </p>
-                </div>
-              </button>
-              <button
-                onClick={openAttemptsArtifact}
-                className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
-              >
-                <History className="h-5 w-5" />
-                <div className="text-left">
-                  <span className="font-medium text-sm text-black">
-                    Attempts
-                  </span>
-                  <p className="text-xs text-zinc-500">
-                    {test.attempts?.length || 0} Attempts
-                  </p>
-                </div>
-              </button>
-            </div>
-          ),
+          content: messageContent,
         },
       ]);
     }
-  }, [test, openQuestionsArtifact, openStudentsArtifact, openSettingsArtifact, openAttemptsArtifact]);
+  }, [messageContent]);
 
-  if (isLoading) {
+  if (isLoading || isFetching) {
     return (
       <div className="flex items-center justify-center h-full">
-        <AILoadingState taskSequences={fetchingTest} />
+        <div className="animate-pulse">
+          <div className="w-4 h-4 bg-black rounded-full" />
+        </div>
       </div>
     );
   }
@@ -458,19 +492,27 @@ export default function TestDetailsPage() {
   }
 
   const handlePromptSubmit = (query: string) => {
-    const newMessages: Message[] = [
-      ...messages,
-      {
-        id: uuidv4(),
-        sender: "user",
-        content: query,
-      },
-    ];
+    const userMessage = {
+      id: uuidv4(),
+      sender: "user" as const,
+      content: query,
+    };
+    const loadingMessage = {
+      id: uuidv4(),
+      sender: "system-llm-response" as const,
+      fullWidth: true,
+      content: (
+        <div className="animate-pulse">
+          <div className="w-4 h-4 bg-black rounded-full" />
+        </div>
+      ),
+    };
+    const newMessages = [...messages, userMessage, loadingMessage];
     setMessages(newMessages);
     const history = newMessages.filter(
       (msg) => msg.sender === "user" || msg.sender === "system-llm-response"
     );
-    chatMutation.mutate({ query, history });
+    chatMutation.mutate({ query, history, loadingMessageId: loadingMessage.id });
   };
 
   return (

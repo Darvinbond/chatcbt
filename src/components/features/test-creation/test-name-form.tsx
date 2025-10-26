@@ -27,6 +27,7 @@ export function TestNameForm({ onSubmit }: TestNameFormProps) {
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          placeholder="Enter test name e.g. Mathematics Exam"
           required
           disabled={isSubmitted}
         />

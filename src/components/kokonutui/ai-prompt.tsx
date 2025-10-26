@@ -204,9 +204,9 @@ export default function AI_Prompt({ onSubmit, hideBottomTools = false, placehold
                 <Button
                   type="submit"
                   size="icon"
-                  className="h-9 w-9 rounded-full"
+                  className="!size-9 flex justify-center items-center rounded-full"
                 >
-                  <Send className="size-5" />
+                  <Send className="!size-[16px]" />
                 </Button>
               )}
             </div>

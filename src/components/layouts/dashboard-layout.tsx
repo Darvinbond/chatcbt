@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import { DashboardProvider, useDashboard } from "@/components/providers/dashboard-provider";
 import { ArtifactProvider } from "@/components/providers/artifact-provider";
+import { SidebarProvider, useSidebar } from "@/components/providers/sidebar-provider";
 import { Sidebar, SidebarContent } from "@/components/layouts/sidebar";
 import { Header } from "@/components/layouts/header";
 import { Artifact } from "@/components/layouts/artifact";
@@ -27,9 +28,11 @@ function Layout({ children }: DashboardLayoutProps) {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <ArtifactProvider>
-      <DashboardProvider>
-        <Layout>{children}</Layout>
-      </DashboardProvider>
+      <SidebarProvider>
+        <DashboardProvider>
+          <Layout>{children}</Layout>
+        </DashboardProvider>
+      </SidebarProvider>
     </ArtifactProvider>
   );
 }

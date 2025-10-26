@@ -47,9 +47,9 @@ export function QuestionEditor({}: QuestionEditorProps) {
   return (
     <div className="w-full">
       <Reorder.Group axis="y" values={questions} onReorder={handleReorderQuestions}>
-        {questions.map((question: Question) => (
+        {questions.map((question: Question, index: number) => (
           <DraggableQuestion
-            key={question.id}
+            key={question.id || index}
             question={question}
             onUpdate={handleUpdateQuestion}
             onDelete={handleDeleteQuestion}
