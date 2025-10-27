@@ -8,6 +8,7 @@ import { Test } from "@/types/test";
 import { Button } from "@/components/ui/button";
 import { DeleteTestModal } from "@/components/ui/delete-test-modal";
 import { useState } from "react";
+import { Trash } from "lucide-react";
 
 interface TestSettingsArtifactProps {
   test: Test;
@@ -46,16 +47,18 @@ export function TestSettingsArtifact({ test }: TestSettingsArtifactProps) {
         />
       </div>
 
-      <div className="border-t pt-4 mt-6">
-        <h3 className="text-sm font-medium text-red-600 mb-2">Dangerous Actions</h3>
-        <p className="text-xs text-gray-500 mb-3">
+      <div className="rounded-[20px] border bg-red-800/20 leading-none border-red-600 p-4 mt-6">
+        <h3 className="text-[16px] font-medium text-red-700 mb-2">Dangerous Actions</h3>
+        <p className="text-[14px] text-red-800 mb-3">
           These actions cannot be undone. Be careful.
         </p>
         <Button
           variant="destructive"
-          size="sm"
+          // size="sm"
+          className="rounded-full mt-[8px]"
           onClick={() => setIsDeleteModalOpen(true)}
         >
+          <Trash className="h-4 w-4 emr-[8px]" />
           Delete Test
         </Button>
       </div>

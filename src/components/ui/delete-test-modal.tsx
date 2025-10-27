@@ -97,9 +97,10 @@ export function DeleteTestModal({
             variant="destructive"
             onClick={handleDelete}
             disabled={isConfirmDisabled}
+            isLoading={deleteTestMutation.isPending}
             className="rounded-full"
           >
-            {deleteTestMutation.isPending ? "Deleting..." : "Delete Test"}
+            Yes, Delete Test
           </Button>
         </DialogFooter>
       </DialogContent>

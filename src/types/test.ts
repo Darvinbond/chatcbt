@@ -6,6 +6,23 @@ export const OptionSchema = z.object({
   isCorrect: z.boolean(),
 });
 
+export const FolderSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  createdById: z.string(),
+  tests: z.array(z.lazy(() => TestSchema)).optional(),
+});
+
+export type Folder = z.infer<typeof FolderSchema>;
+
+export const CreateFolderSchema = z.object({
+  name: z.string().min(1, 'Folder name is required').max(100, 'Folder name must be less than 100 characters'),
+});
+
+export type CreateFolderDto = z.infer<typeof CreateFolderSchema>;
+
 export type Option = z.infer<typeof OptionSchema>;
 
 export const QuestionSchema = z.object({
@@ -62,6 +79,7 @@ export type Test = {
   createdAt: Date;
   updatedAt: Date;
   createdById: string;
+  folderId?: string;
 };
 
 export const TestSchema: z.ZodType<Test> = z.lazy(() => z.object({
@@ -77,6 +95,7 @@ export const TestSchema: z.ZodType<Test> = z.lazy(() => z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   createdById: z.string(),
+  folderId: z.string().optional(),
 }));
 
 export const CreateTestSchema = z.object({

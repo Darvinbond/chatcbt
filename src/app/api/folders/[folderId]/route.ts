@@ -3,7 +3,12 @@ import { ApiResponseBuilder } from '@/lib/api/response'
 import prisma from '@/lib/prisma'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ folderId: string }> }
+) {
+  const { folderId } = await params;
+
   try {
     // Auth check
     const supabase = await createServerSupabaseClient()
@@ -26,45 +31,25 @@ export async function GET(request: NextRequest) {
         return ApiResponseBuilder.unauthorized()
       }
 
-      // Get folders with their tests
-      const folders = await prisma.$transaction(async (tx) => {
-        return await tx.folder.findMany({
-          where: { createdById: appUser.id },
+      const folder = await prisma.$transaction(async (tx) => {
+        return await tx.folder.findFirst({
+          where: {
+            id: folderId,
+            createdById: appUser.id,
+          },
           include: {
             tests: {
               orderBy: { createdAt: 'desc' }
             }
           },
-          orderBy: { createdAt: 'desc' },
         });
       });
 
-      // Get tests that don't belong to any folder
-      const testsWithoutFolder = await prisma.$transaction(async (tx) => {
-        return await tx.test.findMany({
-          where: {
-            createdById: appUser.id,
-            folderId: null
-          },
-          orderBy: { createdAt: 'desc' },
-        });
-      });
+      if (!folder) {
+        return ApiResponseBuilder.error('NOT_FOUND', 'Folder not found', 404)
+      }
 
-      // Structure the response with folders first, then unorganized tests
-      const data = {
-        folders: folders.map(folder => ({
-          id: folder.id,
-          name: folder.name,
-          type: 'folder' as const,
-          tests: folder.tests
-        })),
-        tests: testsWithoutFolder.map(test => ({
-          ...test,
-          type: 'test' as const
-        }))
-      };
-
-      return ApiResponseBuilder.success(data)
+      return ApiResponseBuilder.success(folder)
     } catch (dbError) {
       console.error('Database error:', dbError)
       // Reset the Prisma client on error
@@ -72,7 +57,7 @@ export async function GET(request: NextRequest) {
       return ApiResponseBuilder.error('DATABASE_ERROR', 'Database operation failed', 500)
     }
   } catch (error) {
-    console.error('Unexpected error in GET /api/tests/list:', error)
+    console.error('Unexpected error in GET /api/folders/[folderId]:', error)
     return ApiResponseBuilder.error('INTERNAL_ERROR', 'An unexpected error occurred', 500)
   }
 }

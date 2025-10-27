@@ -45,7 +45,11 @@ export default function TestDetailsPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesInitialized = useRef(false);
   const messageId = useRef(uuidv4());
-  const { data: test, isLoading, isFetching } = useQuery({
+  const {
+    data: test,
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ["test", testId],
     queryFn: () => fetchTest(testId as string),
     enabled: !!testId,
@@ -68,7 +72,7 @@ export default function TestDetailsPage() {
     onSuccess: (data) => {
       setIsLoadingIndex(null);
       toast.success(data.message);
-      queryClient.invalidateQueries({ queryKey: ['test', testId] });
+      queryClient.invalidateQueries({ queryKey: ["test", testId] });
       setTimeout(() => hideArtifact(), 200);
     },
     onError: () => {
@@ -95,7 +99,7 @@ export default function TestDetailsPage() {
     onSuccess: (data) => {
       setIsLoadingIndex(null);
       toast.success(data.message);
-      queryClient.invalidateQueries({ queryKey: ['test', testId] });
+      queryClient.invalidateQueries({ queryKey: ["test", testId] });
       setTimeout(() => hideArtifact(), 200);
     },
     onError: () => {
@@ -122,7 +126,7 @@ export default function TestDetailsPage() {
     onSuccess: (data) => {
       setIsLoadingIndex(null);
       toast.success(data.message);
-      queryClient.invalidateQueries({ queryKey: ['test', testId] });
+      queryClient.invalidateQueries({ queryKey: ["test", testId] });
       setTimeout(() => hideArtifact(), 200);
     },
     onError: () => {
@@ -132,15 +136,13 @@ export default function TestDetailsPage() {
   });
 
   const deleteAttemptsMutation = useMutation({
-    mutationFn: async (data: {
-      deletedAttemptIds: string[];
-    }) => {
+    mutationFn: async (data: { deletedAttemptIds: string[] }) => {
       await testService.deleteAttempts(data.deletedAttemptIds);
     },
     onSuccess: () => {
       setIsLoadingIndex(null);
       toast.success("Attempts deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ['test', testId] });
+      queryClient.invalidateQueries({ queryKey: ["test", testId] });
       setTimeout(() => hideArtifact(), 200);
     },
     onError: () => {
@@ -150,7 +152,11 @@ export default function TestDetailsPage() {
   });
 
   const chatMutation = useMutation({
-    mutationFn: async (data: { query: string; history: Message[]; loadingMessageId: string }) => {
+    mutationFn: async (data: {
+      query: string;
+      history: Message[];
+      loadingMessageId: string;
+    }) => {
       const response = await fetch(`/api/tests/${testId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -217,7 +223,8 @@ export default function TestDetailsPage() {
         if (!initialQuestion) return true; // New question
 
         const sameQuestion = q.question === initialQuestion.question;
-        const sameOptions = q.options.length === initialQuestion.options.length &&
+        const sameOptions =
+          q.options.length === initialQuestion.options.length &&
           q.options.every((o: any, index: number) => {
             const io = initialQuestion.options[index];
             return io && io.id === o.id && io.text === o.text;
@@ -401,66 +408,71 @@ export default function TestDetailsPage() {
   const messageContent = useMemo(() => {
     if (!test) return null;
     return (
-      <div className="flex flex-wrap gap-4">
-        <button
-          onClick={openQuestionsArtifact}
-          className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
-        >
-          <BookText className="h-5 w-5" />
-          <div className="text-left">
-            <span className="font-medium text-sm text-black">
-              Questions
-            </span>
-            <p className="text-xs text-zinc-500">
-              {test.questions.length} Questions
-            </p>
-          </div>
-        </button>
-        <button
-          onClick={openStudentsArtifact}
-          className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
-        >
-          <User className="h-5 w-5" />
-          <div className="text-left">
-            <span className="font-medium text-sm text-black">
-              Students
-            </span>
-            <p className="text-xs text-zinc-500">
-              {test.students?.length || 0} Students
-            </p>
-          </div>
-        </button>
-        <button
-          onClick={openSettingsArtifact}
-          className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
-        >
-          <Settings className="h-5 w-5" />
-          <div className="text-left">
-            <span className="font-medium text-sm text-black">
-              Test Settings
-            </span>
-            <p className="text-xs text-zinc-500">
-              {test.duration} minutes test
-            </p>
-          </div>
-        </button>
-        <button
-          onClick={openAttemptsArtifact}
-          className="flex items-center gap-2 p-3 bg-white rounded-lg border border-zinc-200 hover:bg-gray-50 transition-colors min-w-[240px] cursor-pointer"
-        >
-          <History className="h-5 w-5" />
-          <div className="text-left">
-            <span className="font-medium text-sm text-black">
-              Attempts
-            </span>
-            <p className="text-xs text-zinc-500">
-              {test.attempts?.length || 0} Attempts
-            </p>
-          </div>
-        </button>
+      <div className="flex flex-col gap-[8px]">
+        <div className="flex items-center gap-[8px]">
+          <button
+            onClick={openQuestionsArtifact}
+            className="flex items-center gap-2 px-[16px] py-[8px] bg-white rounded-full border border-zinc-200 hover:bg-gray-50 transition-colors min-w-max cursor-pointer"
+          >
+            <BookText className="size-[16px]" />
+            <div className="text-left">
+              <span className="text-sm text-black">Questions</span>
+            </div>
+          </button>
+          <p className="text-xs text-zinc-500">
+            {test.questions.length} Questions
+          </p>
+        </div>
+        <div className="flex items-center gap-[8px]">
+          <button
+            onClick={openStudentsArtifact}
+            className="flex items-center gap-2 px-[16px] py-[8px] bg-white rounded-full border border-zinc-200 hover:bg-gray-50 transition-colors min-w-max cursor-pointer"
+          >
+            <User className="size-[16px]" />
+            <div className="text-left">
+              <span className="text-sm text-black">Students</span>
+            </div>
+          </button>
+          <p className="text-xs text-zinc-500">
+            {test.students?.length || 0} Students
+          </p>
+        </div>
+        <div className="flex items-center gap-[8px]">
+          <button
+            onClick={openSettingsArtifact}
+            className="flex items-center gap-2 px-[16px] py-[8px] bg-white rounded-full border border-zinc-200 hover:bg-gray-50 transition-colors min-w-max cursor-pointer"
+          >
+            <Settings className="size-[16px]" />
+            <div className="text-left">
+              <span className="text-sm text-black">
+                Test Settings
+              </span>
+            </div>
+          </button>
+          <p className="text-xs text-zinc-500">{test.duration} minutes test</p>
+        </div>
+        <div className="flex items-center gap-[8px]">
+          <button
+            onClick={openAttemptsArtifact}
+            className="flex items-center gap-2 px-[16px] py-[8px] bg-white rounded-full border border-zinc-200 hover:bg-gray-50 transition-colors min-w-max cursor-pointer"
+          >
+            <History className="size-[16px]" />
+            <div className="text-left">
+              <span className="text-sm text-black">Attempts</span>
+            </div>
+          </button>
+          <p className="text-xs text-zinc-500">
+            {test.attempts?.length || "No"} Attempts
+          </p>
+        </div>
       </div>
     );
-  }, [test?.questions?.length, test?.students?.length, test?.attempts?.length, test?.duration,]);
+  }, [
+    test?.questions?.length,
+    test?.students?.length,
+    test?.attempts?.length,
+    test?.duration,
+  ]);
 
   useEffect(() => {
     // Initialize and update messages when content changes
@@ -512,7 +524,11 @@ export default function TestDetailsPage() {
     const history = newMessages.filter(
       (msg) => msg.sender === "user" || msg.sender === "system-llm-response"
     );
-    chatMutation.mutate({ query, history, loadingMessageId: loadingMessage.id });
+    chatMutation.mutate({
+      query,
+      history,
+      loadingMessageId: loadingMessage.id,
+    });
   };
 
   return (

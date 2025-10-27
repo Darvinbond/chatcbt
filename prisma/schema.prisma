@@ -15,15 +15,30 @@ model User {
   role          Role      @default(TEACHER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
+
   tests         Test[]
-  
+  folders       Folder[]
+
   @@index([email])
 }
 
 enum Role {
   TEACHER
   ADMIN
+}
+
+model Folder {
+  id            String    @id @default(cuid())
+  name          String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  createdById   String
+
+  tests         Test[]
+
+  @@index([createdById])
 }
 
 model Test {
@@ -36,15 +51,19 @@ model Test {
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
+
   createdBy     User      @relation(fields: [createdById], references: [id])
   createdById   String
-  
+
+  folder        Folder?   @relation(fields: [folderId], references: [id])
+  folderId      String?
+
   students      Student[]
   attempts      Attempt[]
-  
+
   @@index([uid])
   @@index([createdById])
+  @@index([folderId])
 }
 
 model Student {

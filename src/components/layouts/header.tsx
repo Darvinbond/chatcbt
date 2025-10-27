@@ -34,7 +34,7 @@ export function Header() {
         <h1 className="text-lg font-semibold">ChatCBT</h1>
       </div>
       {testId && (
-        <button onClick={handleCopyLink} className="p-2 rounded-lg hover:bg-zinc-100">
+        <button onClick={handleCopyLink} className="p-2 cursor-pointer rounded-lg hover:bg-zinc-100">
           <Copy className="h-5 w-5" />
         </button>
       )}

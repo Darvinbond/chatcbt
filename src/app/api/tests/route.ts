@@ -15,6 +15,7 @@ const CreateTestSchema = z.object({
   duration: z.number().min(1).max(480),
   questions: z.array(z.any()),
   students: z.array(z.string()).optional(),
+  folderId: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -39,7 +40,10 @@ export async function POST(request: NextRequest) {
     
     // Validate request body
     const body = await request.json()
+    console.log('📝 CreateTest API - Received body:', JSON.stringify(body, null, 2))
+    console.log('📝 CreateTest API - folderId from body:', body.folderId)
     const validated = CreateTestSchema.parse(body)
+    console.log('📝 CreateTest API - validated folderId:', validated.folderId)
     
     // Use a transaction to create the test and students
     const test = await prisma.$transaction(async (tx) => {
@@ -60,6 +64,7 @@ export async function POST(request: NextRequest) {
           questions: questionsWithIds,
           uid: nanoid(),
           createdById: appUser.id,
+          ...(validated.folderId && { folderId: validated.folderId }),
         },
       });
 

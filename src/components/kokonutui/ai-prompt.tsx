@@ -28,10 +28,11 @@ interface AIPromptProps {
   hideBottomTools?: boolean;
   placeholder?: string;
   showHeader?: boolean;
+  topTitle?: React.ReactNode;
   disabled?: boolean;
 }
 
-export default function AI_Prompt({ onSubmit, hideBottomTools = false, placeholder, showHeader = false }: AIPromptProps) {
+export default function AI_Prompt({ onSubmit, hideBottomTools = false, placeholder, showHeader = false, topTitle }: AIPromptProps) {
   const [message, setMessage] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -73,7 +74,12 @@ export default function AI_Prompt({ onSubmit, hideBottomTools = false, placehold
 
   return (
     <div className="w-full">
-      {showHeader && (
+      {showHeader && topTitle && (
+        <div className="mb-7 mx-auto max-w-2xl text-center text-2xl font-semibold leading-9 text-foreground px-1 text-pretty whitespace-pre-wrap">
+          {topTitle}
+        </div>
+      )}
+      {showHeader && !topTitle && (
         <h1 className="mb-7 mx-auto max-w-2xl text-center text-2xl font-semibold leading-9 text-foreground px-1 text-pretty whitespace-pre-wrap">
           Generate Test Content
         </h1>
@@ -89,7 +95,7 @@ export default function AI_Prompt({ onSubmit, hideBottomTools = false, placehold
 
         <div
           className={cn(
-            "w-full max-w-2xl mx-auto bg-transparent dark:bg-muted/50 cursor-text overflow-clip bg-clip-padding p-2.5 shadow-lg border border-border transition-all duration-200",
+            "w-full max-w-2xl mx-auto bg-white cursor-text overflow-clip bg-clip-padding p-2.5 shadow-lg border border-border transition-all duration-200",
             {
               "rounded-3xl grid grid-cols-1 grid-rows-[auto_1fr_auto]":
                 isExpanded,

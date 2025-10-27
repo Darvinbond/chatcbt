@@ -17,7 +17,7 @@ export function Artifact() {
         <div className="flex items-center gap-4">
           <button
             onClick={hide}
-            className="p-1 rounded-full hover:bg-gray-100"
+            className="p-1 cursor-pointer rounded-full hover:bg-gray-100"
           >
             <X className="h-5 w-5" />
           </button>

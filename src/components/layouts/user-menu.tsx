@@ -25,10 +25,19 @@ export function UserMenu({ isCollapsed }: UserMenuProps) {
     <Popover>
       <PopoverTrigger asChild>
         <button className="w-full m-0 flex items-center overflow-hidden text-ellipsis gap-2 p-2 rounded-lg hover:bg-zinc-200">
-          <div className="size-8 aspect-square rounded-full bg-zinc-300 flex items-center justify-center">
+          <div className="size-8 aspect-square rounded-full bg-primary text-white flex items-center justify-center">
             {user?.user_metadata?.name?.[0].toUpperCase()}
           </div>
-          {!isCollapsed && <span className="text-sm overflow-hidden text-ellipsis">{user?.email}</span>}
+          {!isCollapsed && (
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-[500] overflow-hidden text-ellipsis">
+                {user?.user_metadata?.name || "-"}
+              </span>
+              <span className="text-[12px] text-zinc-600 overflow-hidden text-ellipsis">
+                {user?.email}
+              </span>
+            </div>
+          )}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-64 rounded-[16px] !p-0 bg-zinc-100 border-zinc-200">
