@@ -3,7 +3,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, PanelRightClose, Copy } from "lucide-react";
+import { Plus, PanelRightClose, Copy, ExternalLink } from "lucide-react";
 import { useDashboard } from "@/components/providers/dashboard-provider";
 import { Sidebar } from "./sidebar";
 import { useArtifact } from "@/components/providers/artifact-provider";
@@ -20,6 +20,11 @@ export function Header() {
     toast.success("Link copied to clipboard");
   };
 
+  const handleOpenInNewWindow = () => {
+    const link = `${process.env.NEXT_PUBLIC_APP_URL}/attempt?testId=${testId}`;
+    window.open(link, '_blank');
+  };
+
   return (
     <header className="h-14 z-50 px-4 flex items-center justify-between dbg-white sticky top-0 shrink-0">
       <div className="flex items-center gap-2">
@@ -31,12 +36,28 @@ export function Header() {
             </Link>
           </>
         ) : null}
-        <h1 className="text-lg font-semibold">ChatCBT</h1>
+
+        <div className="flex items-center justify-center h-64">
+          <div className="size-[20px] bg-black rounded-full eanimate-pulse" />
+        </div>
       </div>
       {testId && (
-        <button onClick={handleCopyLink} className="p-2 cursor-pointer rounded-lg hover:bg-zinc-100">
-          <Copy className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleCopyLink}
+            className="p-2 cursor-pointer rounded-lg hover:bg-zinc-100"
+            title="Copy test link"
+          >
+            <Copy className="h-5 w-5" />
+          </button>
+          <button
+            onClick={handleOpenInNewWindow}
+            className="p-2 cursor-pointer rounded-lg hover:bg-zinc-100"
+            title="Open test in new tab"
+          >
+            <ExternalLink className="h-5 w-5" />
+          </button>
+        </div>
       )}
     </header>
   );

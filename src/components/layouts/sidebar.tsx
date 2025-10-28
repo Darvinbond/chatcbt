@@ -52,39 +52,15 @@ interface SidebarProps {
   triggerType?: "default" | "sheet";
 }
 
-async function fetchSidebarData(): Promise<SidebarData> {
-  const response = await fetch("/api/tests/list");
-  if (!response.ok) {
-    throw new Error("Failed to fetch tests");
-  }
-  const data = await response.json();
-  return data.data;
-}
-
 export function Sidebar({
   showOnlyTrigger = false,
   triggerType = "default",
 }: SidebarProps) {
-  const {
-    data: sidebarData,
-    isLoading,
-    refetch: refresh,
-  } = useQuery({
-    queryKey: ["sidebar-data"],
-    queryFn: fetchSidebarData,
-    enabled: false,
-  });
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const { isSidebarCollapsed, toggleSidebar } = useDashboard();
   const { isOpen: isArtifactVisible } = useArtifact();
   const { testId } = useParams();
-
-  useEffect(() => {
-    if (!isSidebarCollapsed) {
-      refresh();
-    }
-  }, [isSidebarCollapsed]);
 
   if (showOnlyTrigger) {
     if (triggerType === "sheet") {
@@ -98,8 +74,6 @@ export function Sidebar({
           <SheetContent side="left" className="w-64 h-screen p-[16px]">
             <SheetTitle className="sr-only">Sidebar</SheetTitle>
             <SidebarContent
-              tests={sidebarData}
-              isLoading={isLoading}
               testId={testId as string}
               setIsSearchModalOpen={setIsSearchModalOpen}
               setIsCreateFolderOpen={setIsCreateFolderOpen}
@@ -124,8 +98,6 @@ export function Sidebar({
         )}
       >
         <SidebarContent
-          tests={sidebarData}
-          isLoading={isLoading}
           testId={testId as string}
           isCollapsed={isSidebarCollapsed}
           toggleSidebar={toggleSidebar}
@@ -146,23 +118,19 @@ export function Sidebar({
 }
 
 export function SidebarContent({
-  tests,
-  isLoading,
   testId,
   isCollapsed,
   toggleSidebar,
   setIsSearchModalOpen,
   setIsCreateFolderOpen,
 }: {
-  tests: SidebarData | undefined;
-  isLoading: boolean;
   testId: string;
   isCollapsed?: boolean;
   toggleSidebar?: () => void;
   setIsSearchModalOpen: (isOpen: boolean) => void;
   setIsCreateFolderOpen: (open: boolean) => void;
 }) {
-  const { refresh } = useSidebarProvider();
+  const { refresh, isLoading, tests } = useSidebarProvider();
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set()
   );
@@ -180,6 +148,10 @@ export function SidebarContent({
       return newSet;
     });
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   return (
     <>

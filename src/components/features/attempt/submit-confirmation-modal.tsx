@@ -14,12 +14,14 @@ interface SubmitConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  isSubmitting?: boolean;
 }
 
 export function SubmitConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
+  isSubmitting = false,
 }: SubmitConfirmationModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -34,7 +36,13 @@ export function SubmitConfirmationModal({
           <Button variant="outline" onClick={onClose} className="rounded-full">
             Cancel
           </Button>
-          <Button onClick={onConfirm} className="rounded-full">Yes, Submit</Button>
+          <Button
+            onClick={onConfirm}
+            isLoading={isSubmitting}
+            className="rounded-full"
+          >
+            Yes, Submit
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

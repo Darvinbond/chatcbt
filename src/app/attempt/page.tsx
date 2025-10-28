@@ -20,6 +20,8 @@ function Attempt() {
   const { setTest, setStudent, test, student, setQuestions } = useTestContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTestStarted, setIsTestStarted] = useState(false);
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
+  const [isStartingTest, setIsStartingTest] = useState(false);
 
   useEffect(() => {
     if (testId) {
@@ -53,6 +55,7 @@ function Attempt() {
       return;
     }
 
+    setIsValidatingCode(true);
     try {
       const studentResponse = await fetch("/api/students/validate", {
         method: "POST",
@@ -69,6 +72,8 @@ function Attempt() {
       setIsModalOpen(true);
     } catch (error) {
       toast.error("Invalid student code");
+    } finally {
+      setIsValidatingCode(false);
     }
   };
 
@@ -113,6 +118,7 @@ function Attempt() {
             <div className="mt-4 flex justify-end">
               <Button
                 onClick={handleStartTest}
+                isLoading={isValidatingCode}
                 className="w-max rounded-full"
               >
                 Start Test
@@ -127,6 +133,7 @@ function Attempt() {
           onClose={() => setIsModalOpen(false)}
           onStartTest={async () => {
             if (test && student && student.id) {
+              setIsStartingTest(true);
               try {
                 const response = await testService.attemptTest(test.id, student.id);
                 // console.log(response)
@@ -135,9 +142,12 @@ function Attempt() {
                 setIsTestStarted(true);
               } catch (error) {
                 // The error is already handled by the ApiClient
+              } finally {
+                setIsStartingTest(false);
               }
             }
           }}
+          isStartingTest={isStartingTest}
           test={test}
           student={student}
         />

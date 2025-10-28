@@ -2,9 +2,9 @@
 
 import { createContext, useContext, ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Test } from "@/types/test";
+import { Test, Folder as FolderModel } from "@/types/test";
 
-async function fetchTests(): Promise<Test[]> {
+async function fetchTests(): Promise<SidebarData> {
   const response = await fetch("/api/tests/list");
   if (!response.ok) {
     throw new Error("Failed to fetch tests");
@@ -12,9 +12,13 @@ async function fetchTests(): Promise<Test[]> {
   const data = await response.json();
   return data.data;
 }
+interface SidebarData {
+  folders: (FolderModel & { tests: Test[] })[];
+  tests: Test[];
+}
 
 interface SidebarContextType {
-  tests: Test[] | undefined;
+  tests: SidebarData | undefined;
   isLoading: boolean;
   refetch: () => void;
   refresh: () => void;

@@ -21,6 +21,8 @@ export function AttemptUI() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(test?.duration! * 60);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFullScreenRequested, setIsFullScreenRequested] = useState(false);
 
   useEffect(() => {
     if (timeLeft === 0) {
@@ -34,6 +36,56 @@ export function AttemptUI() {
     }, 1000);
     return () => clearInterval(timer);
   }, [timeLeft, test, student, answers, clearTest]);
+
+  // Enter full-screen mode when test starts
+  useEffect(() => {
+    if (!isFullScreenRequested) {
+      const enterFullScreen = async () => {
+        try {
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          } else if ((document.documentElement as any).webkitRequestFullscreen) {
+            await (document.documentElement as any).webkitRequestFullscreen();
+          } else if ((document.documentElement as any).mozRequestFullScreen) {
+            await (document.documentElement as any).mozRequestFullScreen();
+          } else if ((document.documentElement as any).msRequestFullscreen) {
+            await (document.documentElement as any).msRequestFullscreen();
+          }
+        } catch (error) {
+          // Full-screen not supported or user denied
+          console.log('Full-screen mode not available');
+        }
+      };
+
+      enterFullScreen();
+      setIsFullScreenRequested(true);
+    }
+  }, [isFullScreenRequested]);
+
+  // Exit full-screen mode when component unmounts (test completed)
+  useEffect(() => {
+    return () => {
+      const exitFullScreen = async () => {
+        try {
+          if (document.fullscreenElement) {
+            if (document.exitFullscreen) {
+              await document.exitFullscreen();
+            } else if ((document as any).webkitExitFullscreen) {
+              await (document as any).webkitExitFullscreen();
+            } else if ((document as any).mozCancelFullScreen) {
+              await (document as any).mozCancelFullScreen();
+            } else if ((document as any).msExitFullscreen) {
+              await (document as any).msExitFullscreen();
+            }
+          }
+        } catch (error) {
+          console.log('Could not exit full-screen mode');
+        }
+      };
+
+      exitFullScreen();
+    };
+  }, []);
 
   const handleNextQuestion = () => {
     setCurrentQuestionIndex((prev) => prev + 1);
@@ -102,6 +154,7 @@ export function AttemptUI() {
             <Button
               onClick={handlePrevQuestion}
               disabled={currentQuestionIndex === 0}
+              variant="secondary"
               className="rounded-full"
             >
               Previous
@@ -152,10 +205,18 @@ export function AttemptUI() {
         onClose={() => setIsSubmitModalOpen(false)}
         onConfirm={async () => {
           if (test && student && student.id) {
-            await testService.submitTest(test.id, student.id, answers);
-            clearTest();
+            setIsSubmitting(true);
+            try {
+              await testService.submitTest(test.id, student.id, answers);
+              clearTest();
+            } catch (error) {
+              // Error is handled by the service
+            } finally {
+              setIsSubmitting(false);
+            }
           }
         }}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

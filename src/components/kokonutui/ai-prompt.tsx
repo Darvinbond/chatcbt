@@ -111,7 +111,7 @@ export default function AI_Prompt({ onSubmit, hideBottomTools = false, placehold
         >
           <div
             className={cn(
-              "flex min-h-14 items-center overflow-x-hidden px-1.5",
+              "flex min-14 items-center overflow-x-hidden px-1.5",
               {
                 "px-2 py-1 mb-0": isExpanded,
                 "-my-2.5": !isExpanded,

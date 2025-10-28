@@ -15,6 +15,7 @@ interface TestDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStartTest: () => void;
+  isStartingTest?: boolean;
   test: Test;
   student: Student;
 }
@@ -23,6 +24,7 @@ export function TestDetailsModal({
   isOpen,
   onClose,
   onStartTest,
+  isStartingTest = false,
   test,
   student,
 }: TestDetailsModalProps) {
@@ -47,7 +49,13 @@ export function TestDetailsModal({
           </p>
         </div>
         <DialogFooter>
-          <Button onClick={onStartTest} className="rounded-full">Start Test</Button>
+          <Button
+            onClick={onStartTest}
+            isLoading={isStartingTest}
+            className="rounded-full"
+          >
+            Start Test
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

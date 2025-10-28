@@ -158,8 +158,14 @@
 }
 
 .no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  /* Note: Scrollbars remain visible on Windows for better UX */
+}
+
+/* Hide scrollbars for non-Windows platforms */
+@supports not (-ms-ime-align: auto) {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
 }
 
 .sr-only {
