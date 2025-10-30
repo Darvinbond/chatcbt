@@ -521,9 +521,12 @@ export default function TestDetailsPage() {
     };
     const newMessages = [...messages, userMessage, loadingMessage];
     setMessages(newMessages);
-    const history = newMessages.filter(
-      (msg) => msg.sender === "user" || msg.sender === "system-llm-response"
-    );
+    // Filter messages to only include those with string content for API validation
+    const history = newMessages
+      .filter(
+        (msg) => msg.sender === "user" || msg.sender === "system-llm-response"
+      )
+      .filter((msg) => typeof msg.content === "string"); // Only send string content messages
     chatMutation.mutate({
       query,
       history,

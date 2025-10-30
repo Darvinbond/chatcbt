@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { ApiResponseBuilder } from "@/lib/api/response";
-import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { GeminiService } from "@/services/ai/gemini.service";
 
@@ -16,10 +15,10 @@ const chatRequestSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { testId: string } }
+  { params }: { params: Promise<{ testId: string }> }
 ) {
   try {
-    const { testId } = params;
+    const { testId } = await params;
     const body = await request.json();
     const validationResult = chatRequestSchema.safeParse(body);
 
@@ -29,20 +28,8 @@ export async function POST(
 
     const { query, history } = validationResult.data;
 
-    const test = await prisma.test.findUnique({
-      where: { id: testId },
-      include: {
-        students: true,
-        attempts: true,
-      },
-    });
-
-    if (!test) {
-      return ApiResponseBuilder.notFound("Test");
-    }
-
     const geminiService = new GeminiService();
-    const result = await geminiService.getTestInsights(test, query, history);
+    const result = await geminiService.getTestInsights(query, history, testId);
 
     return ApiResponseBuilder.success(result);
   } catch (error) {
