@@ -6,9 +6,10 @@ interface DraggableOptionProps {
   option: { id: string; text: string; isCorrect: boolean };
   onUpdate: (option: { id: string; text: string; isCorrect: boolean }) => void;
   onDelete: (optionId: string) => void;
+  questionId: string;  // Add questionId prop
 }
 
-export function DraggableOption({ option, onUpdate, onDelete }: DraggableOptionProps) {
+export function DraggableOption({ option, onUpdate, onDelete, questionId }: DraggableOptionProps) {
   const controls = useDragControls();
 
   return (
@@ -27,7 +28,7 @@ export function DraggableOption({ option, onUpdate, onDelete }: DraggableOptionP
       </button>
       <input
         type="radio"
-        name={`correct-option-${option.id}`}
+        name={`correct-option-${questionId}`}
         checked={option.isCorrect}
         onChange={() => onUpdate({ ...option, isCorrect: !option.isCorrect })}
         className="accent-zinc-950"

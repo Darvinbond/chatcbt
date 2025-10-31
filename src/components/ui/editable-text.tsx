@@ -11,15 +11,24 @@ interface EditableTextProps {
 export function EditableText({ value, onChange, className }: EditableTextProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState(value);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setText(value);
   }, [value]);
 
+  const autoResizeTextarea = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+  };
+
   useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      autoResizeTextarea();
     }
   }, [isEditing]);
 
@@ -28,25 +37,29 @@ export function EditableText({ value, onChange, className }: EditableTextProps) 
     onChange(text);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
       handleBlur();
     }
   };
 
   return (
-    <div className={cn('relative group', className)} onClick={() => setIsEditing(true)}>
+    <div className={cn('relative w-full group', className)} onClick={() => setIsEditing(true)}>
       {isEditing ? (
-        <motion.input
-          ref={inputRef}
-          type="text"
+        <motion.textarea
+          ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            autoResizeTextarea();
+          }}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className="w-full bg-transparent outline-none text-sm"
+          onInput={autoResizeTextarea}
+          className="w-full max-w-full p-0 bg-transparent outline-none text-sm resize-none overflow-hidden min-h-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          rows={1}
         />
       ) : (
         <motion.span

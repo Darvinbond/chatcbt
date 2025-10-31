@@ -11,9 +11,10 @@ interface DraggableQuestionProps {
   onDelete: (questionId: string) => void
   onUndoDelete: (questionId: string) => void
   isDeleted: boolean
+  index: number
 }
 
-export function DraggableQuestion({ question, onUpdate, onDelete, onUndoDelete, isDeleted }: DraggableQuestionProps) {
+export function DraggableQuestion({ question, onUpdate, onDelete, onUndoDelete, isDeleted, index }: DraggableQuestionProps) {
   const controls = useDragControls()
   
   return (
@@ -46,12 +47,17 @@ export function DraggableQuestion({ question, onUpdate, onDelete, onUndoDelete, 
       dragMomentum={false}
     >
       <div className="flex items-start gap-3">
-        <button
-          onPointerDown={(e) => controls.start(e)}
-          className="mt-1 cursor-grab active:cursor-grabbing p-4"
-        >
-          <GripVertical className="h-5 w-5 text-gray-400" />
-        </button>
+        <div className="flex items-center gap-2 p-4">
+          <span className="text-sm font-medium text-gray-600 min-w-[24px]">
+            {index + 1}.
+          </span>
+          <button
+            onPointerDown={(e) => controls.start(e)}
+            className="cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical className="h-5 w-5 text-gray-400" />
+          </button>
+        </div>
         
         <div className="flex-1 pr-4 py-4">
           <div className="flex items-center justify-between">
@@ -82,15 +88,17 @@ export function DraggableQuestion({ question, onUpdate, onDelete, onUndoDelete, 
             onReorder={(newOptions: Option[]) => onUpdate({ ...question, options: newOptions })}
           >
             {question.options.map((option: Option) => (
-              <DraggableOption 
-                key={option.id} 
-                option={option} 
+              <DraggableOption
+                key={option.id}
+                option={option}
+                questionId={question.id}
                 onUpdate={(updatedOption: Option) => {
-                  const newOptions = question.options.map((o: Option) => 
-                    o.id === updatedOption.id ? updatedOption : o
-                  );
+                  const newOptions = question.options.map((o: Option) => ({
+                    ...o,
+                    isCorrect: o.id === updatedOption.id ? updatedOption.isCorrect : (updatedOption.isCorrect && o.isCorrect ? false : o.isCorrect)
+                  }));
                   onUpdate({ ...question, options: newOptions });
-                }} 
+                }}
                 onDelete={(optionId: string) => {
                   const newOptions = question.options.filter(
                     (o: Option) => o.id !== optionId
