@@ -20,12 +20,14 @@ import {
   ChevronDown,
   Circle,
   CircleDashed,
+  Download,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { SearchModal } from "./search-modal";
 import { UserMenu } from "./user-menu";
 import { CreateFolderDialog } from "@/components/ui/create-folder-dialog";
+import { ExportScoresModal } from "@/components/features/export/export-scores-modal";
 import { cn } from "@/lib/utils";
 import { useDashboard } from "@/components/providers/dashboard-provider";
 import { useArtifact } from "@/components/providers/artifact-provider";
@@ -58,6 +60,7 @@ export function Sidebar({
 }: SidebarProps) {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const { isSidebarCollapsed, toggleSidebar } = useDashboard();
   const { isOpen: isArtifactVisible } = useArtifact();
   const { testId } = useParams();
@@ -77,6 +80,7 @@ export function Sidebar({
               testId={testId as string}
               setIsSearchModalOpen={setIsSearchModalOpen}
               setIsCreateFolderOpen={setIsCreateFolderOpen}
+              setIsExportModalOpen={setIsExportModalOpen}
             />
           </SheetContent>
         </Sheet>
@@ -103,6 +107,7 @@ export function Sidebar({
           toggleSidebar={toggleSidebar}
           setIsSearchModalOpen={setIsSearchModalOpen}
           setIsCreateFolderOpen={setIsCreateFolderOpen}
+          setIsExportModalOpen={setIsExportModalOpen}
         />
       </aside>
       <SearchModal
@@ -112,6 +117,10 @@ export function Sidebar({
       <CreateFolderDialog
         open={isCreateFolderOpen}
         onOpenChange={setIsCreateFolderOpen}
+      />
+      <ExportScoresModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
       />
     </>
   );
@@ -123,12 +132,14 @@ export function SidebarContent({
   toggleSidebar,
   setIsSearchModalOpen,
   setIsCreateFolderOpen,
+  setIsExportModalOpen,
 }: {
   testId: string;
   isCollapsed?: boolean;
   toggleSidebar?: () => void;
   setIsSearchModalOpen: (isOpen: boolean) => void;
   setIsCreateFolderOpen: (open: boolean) => void;
+  setIsExportModalOpen: (open: boolean) => void;
 }) {
   const { refresh, isLoading, tests } = useSidebarProvider();
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
@@ -208,6 +219,16 @@ export function SidebarContent({
         >
           <Search className="h-5 w-5" />
           {!isCollapsed && <span className="text-sm">Search Tests</span>}
+        </button>
+        <button
+          onClick={() => setIsExportModalOpen(true)}
+          className={cn(
+            "w-full flex items-center gap-2 p-2 select-none rounded-lg cursor-pointer hover:bg-zinc-100",
+            isCollapsed && "justify-center"
+          )}
+        >
+          <Download className="h-5 w-5" />
+          {!isCollapsed && <span className="text-sm">Export All Scores</span>}
         </button>
       </div>
       <div className="flex-1 dborder-t border-zinc-200/50 pt-[16px] overflow-y-auto no-scrollbar">
