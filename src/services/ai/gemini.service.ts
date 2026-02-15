@@ -113,7 +113,7 @@ export class GeminiService {
   async parseContent(content: string, mode: 'text' | 'spreadsheet'): Promise<any> {
     try {
       const result = await generateObject({
-        model: google('models/gemini-2.0-flash-exp'),
+        model: google('models/gemini-2.5-flash'),
         schema: QuestionsResponseSchema,
         providerOptions: {
           google: {
@@ -155,7 +155,7 @@ FINAL CHECK: Before returning, verify that each question has exactly one "isCorr
 
       for (let step = 0; step < 4; step += 1) {
         const result = await generateText({
-          model: google('models/gemini-2.0-flash-exp'),
+          model: google('models/gemini-2.5-flash'),
           messages,
           tools: {
             executeSQL: tool({
