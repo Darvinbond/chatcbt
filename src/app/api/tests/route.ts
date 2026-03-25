@@ -47,14 +47,22 @@ export async function POST(request: NextRequest) {
     
     // Use a transaction to create the test and students
     const test = await prisma.$transaction(async (tx) => {
-      const questionsWithIds = validated.questions.map((q: any) => ({
-        ...q,
-        id: uuidv4(),
-        options: q.options.map((o: any) => ({
-          ...o,
-          id: uuidv4(),
-        })),
-      }));
+      const questionsWithIds = validated.questions.map((q: any) => {
+        if (q?.type === 'theory') {
+          return {
+            ...q,
+            id: q.id || uuidv4(),
+          }
+        }
+        return {
+          ...q,
+          id: q.id || uuidv4(),
+          options: (q.options ?? []).map((o: any) => ({
+            ...o,
+            id: o.id || uuidv4(),
+          })),
+        }
+      });
 
       const newTest = await tx.test.create({
         data: {

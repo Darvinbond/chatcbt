@@ -1,17 +1,17 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Test, Student, Question } from "@/types/test";
+import { Test, Student, StudentQuestion } from "@/types/test";
 import { CongratulationsModal } from "@/components/features/attempt/congratulations-modal";
 
 interface TestContextType {
   test: Test | null;
   student: Student | null;
-  questions: Question[];
+  questions: StudentQuestion[];
   answers: Record<string, string>;
   setTest: (test: Test | null) => void;
   setStudent: (student: Student | null) => void;
-  setQuestions: (questions: Question[]) => void;
+  setQuestions: (questions: StudentQuestion[]) => void;
   setAnswer: (questionId: string, answer: string) => void;
   clearTest: () => void;
 }
@@ -21,7 +21,7 @@ const TestContext = createContext<TestContextType | undefined>(undefined);
 export function TestProvider({ children }: { children: ReactNode }) {
   const [test, setTest] = useState<Test | null>(null);
   const [student, setStudent] = useState<Student | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<StudentQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isCongratulationsModalOpen, setIsCongratulationsModalOpen] = useState(false);
 

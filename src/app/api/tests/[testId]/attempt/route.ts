@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { ApiResponseBuilder } from "@/lib/api/response";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
-import { QuestionSchema } from "@/types/test";
+import { QuestionSchema, isTheoryQuestion } from "@/types/test";
+import type { StudentQuestion } from "@/types/test";
 
 const attemptTestSchema = z.object({
   studentId: z.string(),
@@ -10,10 +11,10 @@ const attemptTestSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { testId: string } }
+  { params }: { params: Promise<{ testId: string }> }
 ) {
   try {
-    const { testId } = params;
+    const { testId } = await params;
     const body = await request.json();
     const validationResult = attemptTestSchema.safeParse(body);
 
@@ -44,7 +45,15 @@ export async function POST(
 
     const questions = QuestionSchema.array().parse(test.questions);
 
-    const questionsWithoutAnswers = questions.map((q) => {
+    const questionsWithoutAnswers: StudentQuestion[] = questions.map((q) => {
+      if (isTheoryQuestion(q)) {
+        return {
+          id: q.id,
+          question: q.question,
+          type: "theory",
+          points: q.points ?? 5,
+        };
+      }
       const { options, ...rest } = q;
       return {
         ...rest,

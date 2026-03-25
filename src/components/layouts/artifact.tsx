@@ -5,7 +5,16 @@ import { X } from "lucide-react";
 import React from "react";
 
 export function Artifact() {
-  const { isOpen, hide, content, title, actions, poolData, isLoadingIndex } = useArtifact();
+  const {
+    isOpen,
+    hide,
+    content,
+    title,
+    actions,
+    poolData,
+    isLoadingIndex,
+    headerSlot,
+  } = useArtifact();
 
   if (!isOpen) {
     return null;
@@ -23,7 +32,8 @@ export function Artifact() {
           </button>
           <h2 className="text-xl">{title}</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {headerSlot}
           {actions.map((action, index) =>
             index === isLoadingIndex ? (
               React.cloneElement(action.trigger as React.ReactElement<any>, {

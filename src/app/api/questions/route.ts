@@ -3,31 +3,52 @@ import { ApiResponseBuilder } from "@/lib/api/response";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
-const questionSchema = z.object({
+const objectiveOptionSchema = z.object({
+  id: z.string().optional(),
+  text: z.string(),
+  isCorrect: z.boolean(),
+});
+
+const objectiveQuestionSchema = z.object({
   id: z.string().optional(),
   question: z.string(),
-  options: z.array(
-    z.object({
-      id: z.string().optional(),
-      text: z.string(),
-      isCorrect: z.boolean(),
-    })
-  ),
+  options: z.array(objectiveOptionSchema),
   type: z.enum(["multiple-choice", "true-false", "fill-blank"]),
   points: z.number(),
 });
 
-const newQuestionSchema = z.object({
+const theoryQuestionSchema = z.object({
+  id: z.string().optional(),
   question: z.string(),
-  options: z.array(
-    z.object({
-      text: z.string(),
-      isCorrect: z.boolean(),
-    })
-  ),
-  type: z.enum(["multiple-choice", "true-false", "fill-blank"]),
+  type: z.literal("theory"),
   points: z.number(),
+  markingGuide: z.string().optional(),
 });
+
+const questionSchema = z.discriminatedUnion("type", [
+  theoryQuestionSchema,
+  objectiveQuestionSchema,
+]);
+
+const newQuestionSchema = z.discriminatedUnion("type", [
+  z.object({
+    question: z.string(),
+    type: z.literal("theory"),
+    points: z.number(),
+    markingGuide: z.string().optional(),
+  }),
+  z.object({
+    question: z.string(),
+    options: z.array(
+      z.object({
+        text: z.string(),
+        isCorrect: z.boolean(),
+      })
+    ),
+    type: z.enum(["multiple-choice", "true-false", "fill-blank"]),
+    points: z.number(),
+  }),
+]);
 
 const saveQuestionsRequestSchema = z.object({
   testId: z.string(),

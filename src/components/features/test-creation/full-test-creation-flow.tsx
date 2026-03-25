@@ -38,7 +38,7 @@ export function FullTestCreationFlow({
   onModeChange
 }: FullTestCreationFlowProps) {
   const router = useRouter();
-  const { isOpen: isArtifactVisible, show: showArtifact } = useArtifact();
+  const { isOpen: isArtifactVisible, show: showArtifact, poolData } = useArtifact();
   const { refresh } = useSidebar();
   const [messages, setMessages] = useState<Message[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -60,35 +60,24 @@ export function FullTestCreationFlow({
   }, [questions]);
 
   useEffect(() => {
+    if (
+      isArtifactVisible &&
+      Array.isArray(poolData?.questions)
+    ) {
+      setQuestions(poolData.questions as Question[]);
+    }
+  }, [poolData?.questions, isArtifactVisible]);
+
+  useEffect(() => {
     studentsRef.current = students;
   }, [students]);
 
   useEffect(() => {
     if (isArtifactVisible) {
-      const handleAddQuestion = () => {
-        const newQuestion: Question = {
-          id: uuidv4(),
-          question: "New Question",
-          options: [],
-          type: "multiple-choice",
-          points: 1,
-        };
-        setQuestions((prevQuestions) => [newQuestion, ...prevQuestions]);
-      };
-
       showArtifact(
         <QuestionEditor />,
         "Generated Questions",
-        [
-          {
-            onClick: handleAddQuestion,
-            trigger: (
-              <Button key="add" className="rounded-full" variant="outline">
-                Add Question
-              </Button>
-            ),
-          },
-        ],
+        [],
         { questions }
       );
     }
@@ -113,12 +102,21 @@ export function FullTestCreationFlow({
   };
 
   const processMutation = useMutation({
-    mutationFn: async (data: { content: string; mode: string; loadingMessageId: string }) => {
+    mutationFn: async (data: {
+      content: string;
+      mode: string;
+      questionKind?: "objective" | "theory" | "mixed";
+      loadingMessageId: string;
+    }) => {
       const { loadingMessageId, ...rest } = data;
       const response = await fetch("/api/ai/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(rest),
+        body: JSON.stringify({
+          content: rest.content,
+          mode: rest.mode,
+          questionKind: rest.questionKind ?? "mixed",
+        }),
       });
       if (!response.ok) throw new Error("Processing failed");
       const result = await response.json();
@@ -133,30 +131,10 @@ export function FullTestCreationFlow({
         setQuestions(newQuestions);
 
         const openArtifact = () => {
-          const handleAddQuestion = () => {
-            const newQuestion: Question = {
-              id: uuidv4(),
-              question: "New Question",
-              options: [],
-              type: "multiple-choice",
-              points: 1,
-            };
-            setQuestions((prevQuestions) => [newQuestion, ...prevQuestions]);
-          };
-
           showArtifact(
             <QuestionEditor />,
             "Generated Questions",
-            [
-              {
-                onClick: handleAddQuestion,
-                trigger: (
-                  <Button key="add" className="rounded-full" variant="outline">
-                    Add Question
-                  </Button>
-                ),
-              },
-            ],
+            [],
             { questions: newQuestions }
           );
         };
@@ -178,8 +156,8 @@ export function FullTestCreationFlow({
                     <span className="font-medium text-sm">Click to view questions</span>
                   </Button>
                   <p className="text-sm text-black">
-                    Here are the questions generated from your content. You can edit,
-                    reorder, or add new questions before proceeding.
+                    Here is what we generated from your content. Edit, reorder, or add
+                    questions—then continue when you are ready.
                   </p>
                 </div>
               )
@@ -222,8 +200,12 @@ export function FullTestCreationFlow({
     },
   });
 
-  const handlePromptSubmit = (value: string, mode: string) => {
-    console.log("Submitting prompt:", value, mode);
+  const handlePromptSubmit = (
+    value: string,
+    mode: string,
+    questionKind?: "objective" | "theory" | "mixed"
+  ) => {
+    console.log("Submitting prompt:", value, mode, questionKind);
     // Hide header after first submission
     setShowHeader(false);
     // Add user message immediately so layout switches to chat view
@@ -239,7 +221,12 @@ export function FullTestCreationFlow({
       ),
     };
     setMessages((prev) => [...prev, loadingMessage]);
-    processMutation.mutate({ content: value, mode, loadingMessageId: loadingMessage.id });
+    processMutation.mutate({
+      content: value,
+      mode,
+      questionKind: questionKind ?? "mixed",
+      loadingMessageId: loadingMessage.id,
+    });
   };
 
   const handleTryAgain = () => {
@@ -363,7 +350,9 @@ export function FullTestCreationFlow({
       ),
     };
     setMessages((prev) => [...prev, loadingMessage]);
-    const finalQuestions = questionsRef.current;
+    const finalQuestions = Array.isArray(poolData?.questions)
+      ? (poolData!.questions as Question[])
+      : questionsRef.current;
     const finalStudents = studentsRef.current;
     createTestMutation.mutate({
       title: details.title,
@@ -393,7 +382,9 @@ export function FullTestCreationFlow({
     setMessages((prev) => [...prev, loadingMessage]);
 
     // Use refs to get current values
-    const finalQuestions = questionsRef.current;
+    const finalQuestions = Array.isArray(poolData?.questions)
+      ? (poolData!.questions as Question[])
+      : questionsRef.current;
     const finalStudents = studentsRef.current;
 
     console.log("handleTestCreation called. Final payload:", {
@@ -448,6 +439,7 @@ export function FullTestCreationFlow({
               showHeader={showHeader}
               placeholder={placeholder}
               topTitle={topTitle}
+              showQuestionKindToggle
             />
           </div>
         </div>

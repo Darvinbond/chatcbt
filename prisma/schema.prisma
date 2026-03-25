@@ -84,6 +84,8 @@ model Student {
 model Attempt {
   id            String    @id @default(cuid())
   answers       Json      // Student's answers
+  /// Per-question marks for theory items: comments, earned vs max points, totals.
+  gradingMetadata Json?
   score         Float?
   startedAt     DateTime  @default(now())
   submittedAt   DateTime?

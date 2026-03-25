@@ -25,7 +25,7 @@ export type CreateFolderDto = z.infer<typeof CreateFolderSchema>;
 
 export type Option = z.infer<typeof OptionSchema>;
 
-export const QuestionSchema = z.object({
+export const ObjectiveQuestionSchema = z.object({
   id: z.string(),
   question: z.string(),
   options: z.array(OptionSchema),
@@ -33,7 +33,57 @@ export const QuestionSchema = z.object({
   points: z.number().default(1),
 });
 
+export type ObjectiveQuestion = z.infer<typeof ObjectiveQuestionSchema>;
+
+export const TheoryQuestionSchema = z.object({
+  id: z.string(),
+  question: z.string(),
+  type: z.literal('theory'),
+  /** Maximum points an instructor assigns; LLM awards up to this. */
+  points: z.number().default(5),
+  /** Optional rubric shown only to teachers / the grader, not students. */
+  markingGuide: z.string().optional(),
+});
+
+export type TheoryQuestion = z.infer<typeof TheoryQuestionSchema>;
+
+export const QuestionSchema = z.discriminatedUnion('type', [
+  TheoryQuestionSchema,
+  ObjectiveQuestionSchema,
+]);
+
 export type Question = z.infer<typeof QuestionSchema>;
+
+export function isTheoryQuestion(q: Question): q is TheoryQuestion {
+  return q.type === 'theory';
+}
+
+export function isObjectiveQuestion(q: Question): q is ObjectiveQuestion {
+  return q.type !== 'theory';
+}
+
+export function isStudentTheoryQuestion(q: StudentQuestion): q is StudentTheoryQuestion {
+  return q.type === 'theory';
+}
+
+export function isStudentObjectiveQuestion(
+  q: StudentQuestion
+): q is StudentObjectiveQuestion {
+  return q.type !== 'theory';
+}
+
+/** Student-facing theory prompt (no marking guide). */
+export type StudentTheoryQuestion = Pick<TheoryQuestion, 'id' | 'question' | 'type' | 'points'>;
+
+export type StudentObjectiveQuestion = {
+  id: string;
+  question: string;
+  type: 'multiple-choice' | 'true-false' | 'fill-blank';
+  points: number;
+  options: Array<{ id: string; text: string }>;
+};
+
+export type StudentQuestion = StudentObjectiveQuestion | StudentTheoryQuestion;
 
 export const StudentSchema = z.object({
   id: z.string().optional(),
@@ -44,10 +94,27 @@ export const StudentSchema = z.object({
 
 export type Student = z.infer<typeof StudentSchema>;
 
+export const TheoryQuestionMarkSchema = z.object({
+  earned: z.number(),
+  max: z.number(),
+  comment: z.string(),
+});
+
+export type TheoryQuestionMark = z.infer<typeof TheoryQuestionMarkSchema>;
+
+export const AttemptGradingMetadataSchema = z.object({
+  objectiveEarned: z.number(),
+  objectiveMax: z.number(),
+  theory: z.record(z.string(), TheoryQuestionMarkSchema).optional(),
+});
+
+export type AttemptGradingMetadata = z.infer<typeof AttemptGradingMetadataSchema>;
+
 export type Attempt = {
   id: string;
   answers: Record<string, string>;
   score?: number;
+  gradingMetadata?: AttemptGradingMetadata;
   startedAt: Date;
   submittedAt: Date;
   duration?: number;
@@ -59,6 +126,7 @@ export const AttemptSchema: z.ZodType<Attempt> = z.lazy(() => z.object({
   id: z.string(),
   answers: z.record(z.string(), z.string()),
   score: z.number().optional(),
+  gradingMetadata: AttemptGradingMetadataSchema.optional(),
   startedAt: z.date(),
   submittedAt: z.date(),
   duration: z.number().optional(),

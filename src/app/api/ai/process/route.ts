@@ -1,11 +1,13 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ApiResponseBuilder } from '@/lib/api/response'
-import { GeminiService } from '@/services/ai/gemini.service'
+import { createAiService } from '@/services/ai'
 
 const ProcessRequestSchema = z.object({
   content: z.string(),
   mode: z.enum(['text', 'spreadsheet']),
+  /** objective = choice only; theory = written only; mixed = both in one run (respects counts in the prompt). */
+  questionKind: z.enum(['objective', 'theory', 'mixed']).optional().default('mixed'),
 })
 
 export async function POST(request: NextRequest) {
@@ -13,8 +15,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = ProcessRequestSchema.parse(body)
     
-    const geminiService = new GeminiService()
-    const result = await geminiService.parseContent(validated.content, validated.mode)
+    const ai = createAiService()
+    let result: { questions: unknown[] }
+    if (validated.questionKind === 'theory') {
+      result = await ai.parseTheoryQuestions(validated.content)
+    } else if (validated.questionKind === 'objective') {
+      result = await ai.parseContent(validated.content, validated.mode)
+    } else {
+      result = await ai.parseMixedTestQuestions(validated.content, validated.mode)
+    }
     
     return ApiResponseBuilder.success(result)
   } catch (error) {

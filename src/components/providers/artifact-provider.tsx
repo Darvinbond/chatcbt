@@ -21,6 +21,9 @@ interface ArtifactContextType {
   content: ReactNode;
   title: string;
   actions: Action[];
+  /** Rendered in the panel header before static actions (e.g. tab-aware Add question). Cleared on hide/show. */
+  headerSlot: ReactNode;
+  setHeaderSlot: (node: ReactNode) => void;
   poolData: any;
   setPoolData: (data: any) => void;
   isLoadingIndex: number | null;
@@ -45,6 +48,7 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
   const [actions, setActions] = useState<Action[]>([]);
   const [poolData, setPoolData] = useState<any>(null);
   const [isLoadingIndex, setIsLoadingIndex] = useState<number | null>(null);
+  const [headerSlot, setHeaderSlot] = useState<ReactNode>(null);
 
   const setPoolDataCallback = useCallback((data: any) => {
     setPoolData(data);
@@ -57,6 +61,7 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
       newActions: Action[],
       newPoolData?: any
     ) => {
+      setHeaderSlot(null);
       setPoolData(newPoolData);
       setContent(newContent);
       setTitle(newTitle);
@@ -72,6 +77,7 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
     setTitle("");
     setActions([]);
     setPoolData(null);
+    setHeaderSlot(null);
   }, []);
 
   const pathname = usePathname();
@@ -87,6 +93,8 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
         content,
         title,
         actions,
+        headerSlot,
+        setHeaderSlot,
         poolData,
         setPoolData: setPoolDataCallback,
         isLoadingIndex,

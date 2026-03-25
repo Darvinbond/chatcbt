@@ -189,20 +189,6 @@ export default function TestDetailsPage() {
   const openQuestionsArtifact = useCallback(() => {
     if (!test) return;
 
-    const handleAddQuestion = () => {
-      const newQuestion = {
-        id: uuidv4(),
-        question: "New Question",
-        options: [],
-        type: "multiple-choice",
-        points: 1,
-      };
-      setPoolData((prevPoolData: any) => ({
-        ...prevPoolData,
-        questions: [newQuestion, ...(prevPoolData.questions || [])],
-      }));
-    };
-
     const handleSave = (poolData: any) => {
       setIsLoadingIndex(1);
       const { questions, deletedQuestionIds } = poolData || {};
@@ -221,6 +207,18 @@ export default function TestDetailsPage() {
         );
 
         if (!initialQuestion) return true; // New question
+
+        if (q.type === "theory" && initialQuestion.type === "theory") {
+          const same =
+            q.question === initialQuestion.question &&
+            q.points === initialQuestion.points &&
+            (q.markingGuide ?? "") === (initialQuestion.markingGuide ?? "");
+          return !same;
+        }
+
+        if (q.type === "theory" || initialQuestion.type === "theory") {
+          return true;
+        }
 
         const sameQuestion = q.question === initialQuestion.question;
         const sameOptions =
@@ -245,14 +243,6 @@ export default function TestDetailsPage() {
       <QuestionEditor />,
       "Questions",
       [
-        {
-          onClick: handleAddQuestion,
-          trigger: (
-            <Button key="add" className="rounded-full" variant="outline">
-              Add Question
-            </Button>
-          ),
-        },
         {
           onClick: handleSave,
           trigger: (

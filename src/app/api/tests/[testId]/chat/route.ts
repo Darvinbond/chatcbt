@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { ApiResponseBuilder } from "@/lib/api/response";
 import { z } from "zod";
-import { GeminiService } from "@/services/ai/gemini.service";
+import { createAiService } from "@/services/ai";
 
 const chatRequestSchema = z.object({
   query: z.string(),
@@ -28,8 +28,8 @@ export async function POST(
 
     const { query, history } = validationResult.data;
 
-    const geminiService = new GeminiService();
-    const result = await geminiService.getTestInsights(query, history, testId);
+    const ai = createAiService();
+    const result = await ai.getTestInsights(query, history, testId);
 
     return ApiResponseBuilder.success(result);
   } catch (error) {
