@@ -4,12 +4,6 @@ import type { ProviderOptions } from '@ai-sdk/provider-utils'
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 import prisma from '@/lib/prisma'
-import {
-  extractQuestionCountsFromPrompt,
-  resolveCountsForMixed,
-  clampQuestionCount,
-} from '@/lib/question-counts'
-
 /** No optional keys: OpenAI `strictJsonSchema` requires `required` to list every property. IDs are assigned after generation. */
 const ObjectiveQuestionRowSchema = z.object({
   question: z.string(),
@@ -45,7 +39,12 @@ const AiTheoryQuestionRowSchema = z.object({
 })
 
 const TheoryQuestionsResponseSchema = z.object({
-  questions: z.array(AiTheoryQuestionRowSchema)
+  questions: z.array(AiTheoryQuestionRowSchema),
+})
+
+const MixedQuestionsResponseSchema = z.object({
+  objectiveQuestions: z.array(ObjectiveQuestionRowSchema),
+  theoryQuestions: z.array(AiTheoryQuestionRowSchema),
 })
 
 const TheoryGradeResultSchema = z.object({
@@ -82,67 +81,40 @@ export class BaseAiService {
   ) {}
 
   async parseContent(content: string, mode: 'text' | 'spreadsheet'): Promise<any> {
-    const extracted = extractQuestionCountsFromPrompt(content)
-    const total =
-      extracted.objectiveCount != null
-        ? clampQuestionCount(extracted.objectiveCount, 1, 80)
-        : 10
-    return this.generateObjectiveQuestions(content, mode, total)
-  }
-
-  /**
-   * Generate multiple-choice (etc.) questions in batches so large counts (e.g. 40) fit model output limits.
-   */
-  private async generateObjectiveQuestions(
-    content: string,
-    mode: 'text' | 'spreadsheet',
-    total: number
-  ): Promise<{ questions: ObjectiveQuestionWithId[] }> {
-    const count = clampQuestionCount(total, 1, 80)
-    const BATCH = 12
-    const batches = Math.ceil(count / BATCH)
-    const all: ObjectiveQuestionWithId[] = []
-
     try {
-      for (let b = 0; b < batches; b += 1) {
-        const offset = b * BATCH
-        const n = Math.min(BATCH, count - offset)
+      const result = await generateObject({
+        model: this.objectModel,
+        schema: QuestionsResponseSchema,
+        ...(this.objectConfig.providerOptions
+          ? { providerOptions: this.objectConfig.providerOptions }
+          : {}),
+        prompt: `You are an exam question generator. A teacher is telling you what they need — read their request carefully and do exactly what they say.
 
-        const result = await generateObject({
-          model: this.objectModel,
-          schema: QuestionsResponseSchema,
-          ...(this.objectConfig.providerOptions
-            ? { providerOptions: this.objectConfig.providerOptions }
-            : {}),
-          prompt: `You generate structured exam questions. Mode hint: ${mode}.
-
-USER REQUEST (topic, level, style — follow closely):
+TEACHER'S REQUEST:
 ${content}
 
-THIS BATCH: Generate EXACTLY ${n} questions. You are batch ${b + 1} of ${batches} toward a total of ${count} questions for one test.
+MODE HINT: ${mode}
 
 RULES:
-- Return EXACTLY ${n} items in "questions". No fewer, no more.
-- type is usually "multiple-choice" with 4 options unless the user asked for true-false or fill-blank.
+- Generate exactly the number and types of objective questions the teacher asked for. If they said 30, generate 30. If they said 10, generate 10. If they didn't specify a count, generate 10.
+- Follow ALL of the teacher's instructions about question types, formats, and styles precisely. If they request specific types (fill-in-the-blank/gap, antonyms, synonyms, sentence completion, comprehension, cloze tests, vocabulary, grammar, etc.), distribute questions across ALL requested types. Do NOT default everything to plain multiple-choice.
+- If the teacher pasted existing questions, reformat them faithfully into the structured format.
+- Use the "type" field: "multiple-choice" (4 options) for standard MCQ, antonym/synonym selection, vocabulary, etc.; "fill-blank" for fill-in-the-gap/blank questions; "true-false" for true/false.
+- For fill-in-the-blank questions, write the sentence with a blank (e.g. "The cat sat on the ___") as the question text, and provide the correct word plus distractors as options.
 - Every question MUST have exactly one option with "isCorrect": true.
-- Cover different subtopics / angles so questions do not repeat earlier batches.
-${b > 0 ? '- Do not repeat themes or duplicate wording from previous batches; continue with fresh angles on the same overall topic.' : ''}
+- Cover different subtopics and angles — no duplicate questions.
+- Do NOT simplify, reduce, or ignore any part of what the teacher asked for.
 
-If the topic is inappropriate or empty, use challenging multiple-choice questions on Nigerian history instead (still exactly ${n} items).
+If the topic is inappropriate or empty, generate challenging multiple-choice questions on Nigerian history instead.`,
+      })
 
-FINAL CHECK: each question has exactly one "isCorrect": true.`
-        })
-
-        for (const q of result.object.questions) {
-          all.push({
-            ...q,
-            points: Number.isFinite(q.points) ? q.points : 1,
-            id: uuidv4(),
-          })
-        }
+      return {
+        questions: result.object.questions.map((q) => ({
+          ...q,
+          points: Number.isFinite(q.points) ? q.points : 1,
+          id: uuidv4(),
+        })),
       }
-
-      return { questions: all.slice(0, count) }
     } catch (error) {
       console.error('AI parsing error:', error)
       throw new Error('Failed to parse content')
@@ -164,31 +136,60 @@ FINAL CHECK: each question has exactly one "isCorrect": true.`
         }
     >
   }> {
-    const { objective, theory } = resolveCountsForMixed(
-      extractQuestionCountsFromPrompt(content)
-    )
+    try {
+      const result = await generateObject({
+        model: this.objectModel,
+        schema: MixedQuestionsResponseSchema,
+        ...(this.objectConfig.providerOptions
+          ? { providerOptions: this.objectConfig.providerOptions }
+          : {}),
+        prompt: `You are an exam question generator. A teacher is telling you what they need — read their request carefully and do exactly what they say. Generate BOTH objective (choice-based) AND theory (written/essay) questions as requested.
 
-    const objectivePart =
-      objective > 0
-        ? await this.generateObjectiveQuestions(content, mode, objective)
-        : { questions: [] as ObjectiveQuestionWithId[] }
+TEACHER'S REQUEST:
+${content}
 
-    const theoryPart =
-      theory > 0 ? await this.parseTheoryQuestions(content, theory) : { questions: [] }
+MODE HINT: ${mode}
 
-    const objectiveRows = objectivePart.questions.map((q) => ({
-      ...q,
-      id: q.id ?? uuidv4(),
-    }))
+RULES:
+- Generate exactly the number and types of questions the teacher asked for. If they said 30 objective and 4 theory, generate exactly 30 objective and 4 theory. Follow their counts precisely.
+- If the teacher didn't specify counts, default to 10 objective and 5 theory.
+- Follow ALL of the teacher's instructions about question types, formats, and styles. If they request specific objective types (fill-in-the-blank/gap, antonyms, synonyms, comprehension, cloze, grammar, etc.), distribute the objective questions across ALL requested types. Do NOT default everything to plain multiple-choice.
+- If the teacher requests comprehension passages, short stories, or reading texts for theory questions, include the FULL passage/story text in the first theory question (clearly labelled, e.g. "Read the passage below and answer the questions that follow:\\n\\n[passage text]\\n\\nQuestion: ..."). Subsequent theory questions referencing the same passage should note "Based on the passage above, ..." or similar.
+- If the teacher pasted existing questions, reformat them faithfully into the structured format.
+- For objective questions: use "type" field — "multiple-choice" (4 options), "fill-blank", or "true-false". Every objective question MUST have exactly one option with "isCorrect": true.
+- For theory questions: include sensible "points" (5–15) and "markingGuide" (grading hints for teachers, or "" if none).
+- Cover different subtopics and angles — no duplicate questions.
+- Do NOT simplify, reduce, or ignore any part of what the teacher asked for.
 
-    return {
-      questions: [...objectiveRows, ...theoryPart.questions],
+If the topic is inappropriate or empty, generate questions on Nigerian history instead.`,
+      })
+
+      const objectiveRows: Array<ObjectiveQuestionWithId> =
+        result.object.objectiveQuestions.map((q) => ({
+          ...q,
+          points: Number.isFinite(q.points) ? q.points : 1,
+          id: uuidv4(),
+        }))
+
+      const theoryRows = result.object.theoryQuestions.map((q) => ({
+        id: uuidv4(),
+        question: q.question,
+        type: 'theory' as const,
+        points: Number.isFinite(q.points) ? q.points : 5,
+        ...(q.markingGuide?.trim()
+          ? { markingGuide: q.markingGuide.trim() }
+          : {}),
+      }))
+
+      return { questions: [...objectiveRows, ...theoryRows] }
+    } catch (error) {
+      console.error('AI mixed generation error:', error)
+      throw new Error('Failed to generate questions')
     }
   }
 
   async parseTheoryQuestions(
-    content: string,
-    targetCount?: number
+    content: string
   ): Promise<{
     questions: Array<{
       id: string
@@ -198,14 +199,6 @@ FINAL CHECK: each question has exactly one "isCorrect": true.`
       markingGuide?: string
     }>
   }> {
-    const extracted = extractQuestionCountsFromPrompt(content)
-    const count =
-      targetCount != null
-        ? clampQuestionCount(targetCount, 1, 25)
-        : extracted.theoryCount != null
-          ? clampQuestionCount(extracted.theoryCount, 1, 25)
-          : 5
-
     try {
       const result = await generateObject({
         model: this.objectModel,
@@ -213,18 +206,22 @@ FINAL CHECK: each question has exactly one "isCorrect": true.`
         ...(this.objectConfig.providerOptions
           ? { providerOptions: this.objectConfig.providerOptions }
           : {}),
-        prompt: `You create written-response (theory) exam questions. Students answer in long form in a rich text editor—no multiple choice.
+        prompt: `You are an exam question generator. A teacher is telling you what they need — read their request carefully and do exactly what they say. Generate ONLY theory (written/essay) questions. Students answer in long form in a rich text editor — no multiple choice.
 
-USER REQUEST:
+TEACHER'S REQUEST:
 ${content}
 
 RULES:
-- Output EXACTLY ${count} questions in "questions". No fewer, no more.
-- Each item needs a sensible max point value in "points" (e.g. 5–15 depending on depth).
-- Always include "markingGuide" (string). Use what an excellent answer should cover, or "" if none. Teachers use this only for grading.
-- Prompts should invite analysis, explanation, comparison, or evaluation.
+- Generate exactly the number of theory questions the teacher asked for. If they said 4, generate 4. If they said 10, generate 10. If they didn't specify a count, generate 5.
+- Follow ALL of the teacher's structural and format requirements. If they request comprehension passages, short stories, reading texts, poems, or any specific format, you MUST include them exactly as described.
+- When a comprehension passage or story is requested, include the FULL passage/story text in the first question (clearly labelled, e.g. "Read the passage below and answer the questions that follow:\\n\\n[passage text]\\n\\nQuestion: ..."). Subsequent questions referencing the same passage should note "Based on the passage above, ..." or similar.
+- If the teacher pasted existing questions, reformat them faithfully into the structured format.
+- Each question needs a sensible max point value in "points" (e.g. 5–15 depending on depth).
+- Always include "markingGuide" — what an excellent answer should cover, or "" if none. Teachers use this for grading only.
+- Questions should invite analysis, explanation, comparison, or evaluation.
+- Do NOT simplify, reduce, or ignore any part of what the teacher asked for.
 
-If the request is nonsense or off-topic, produce ${count} solid theory questions on foundational concepts in the subject implied by the content, or on Nigerian history if there is no subject.`
+If the topic is inappropriate or empty, generate theory questions on Nigerian history instead.`,
       })
 
       return {
