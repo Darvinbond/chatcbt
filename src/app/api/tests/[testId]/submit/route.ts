@@ -2,10 +2,12 @@ import { NextRequest } from "next/server";
 import { ApiResponseBuilder } from "@/lib/api/response";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
-import { QuestionSchema, isObjectiveQuestion, isTheoryQuestion } from "@/types/test";
 import { Prisma, Attempt } from "@prisma/client";
-import { createAiService } from "@/services/ai";
-import { theoryAnswerToPlainText } from "@/lib/theory-answer";
+import {
+  computeAttemptGrading,
+  gradingMetadataToPrismaJson,
+  parseTestQuestions,
+} from "@/lib/grade-attempt";
 
 const submitTestSchema = z.object({
   studentId: z.string(),
@@ -38,73 +40,6 @@ export async function POST(
       return ApiResponseBuilder.notFound("Test");
     }
 
-    const questions = QuestionSchema.array().parse(test.questions);
-
-    let objectiveEarned = 0;
-    let objectiveMax = 0;
-    const theoryMarks: Record<string, { earned: number; max: number; comment: string }> = {};
-
-    for (const question of questions) {
-      if (isObjectiveQuestion(question)) {
-        const max = question.points ?? 1;
-        objectiveMax += max;
-        const correctOption = question.options.find((o) => o.isCorrect);
-        if (
-          correctOption &&
-          answers[question.id] &&
-          answers[question.id] === correctOption.id
-        ) {
-          objectiveEarned += max;
-        }
-      }
-    }
-
-    const theoryQuestions = questions.filter(isTheoryQuestion);
-    const needsLlmGrading = theoryQuestions.length > 0;
-
-    if (needsLlmGrading) {
-      const ai = createAiService();
-      for (const q of theoryQuestions) {
-        const raw = answers[q.id];
-        const plain = theoryAnswerToPlainText(raw ?? "");
-        const max = q.points ?? 5;
-        if (!plain) {
-          theoryMarks[q.id] = {
-            earned: 0,
-            max,
-            comment: "No answer submitted for this question.",
-          };
-          continue;
-        }
-        try {
-          const { score, comment } = await ai.gradeTheoryAnswer({
-            questionText: q.question,
-            studentAnswer: plain,
-            maxPoints: max,
-            markingGuide: q.markingGuide,
-          });
-          theoryMarks[q.id] = { earned: score, max, comment };
-        } catch {
-          theoryMarks[q.id] = {
-            earned: 0,
-            max,
-            comment: "Automatic marking failed for this question. Your instructor can review your answer.",
-          };
-        }
-      }
-    }
-
-    const theoryEarned = Object.values(theoryMarks).reduce((s, m) => s + m.earned, 0);
-    const theoryMax = theoryQuestions.reduce((s, q) => s + (q.points ?? 5), 0);
-
-    const score = objectiveEarned + theoryEarned;
-
-    const gradingMetadata = {
-      objectiveEarned,
-      objectiveMax,
-      ...(Object.keys(theoryMarks).length > 0 ? { theory: theoryMarks } : {}),
-    };
-
     const attempt = await prisma.attempt.findFirst({
       where: {
         testId,
@@ -124,6 +59,26 @@ export async function POST(
       (new Date(submittedAt).getTime() - new Date(attempt.startedAt).getTime()) / 60000
     );
 
+    const autoMark = test.autoMarkOnSubmit;
+
+    if (!autoMark) {
+      const updatedAttempt = await prisma.attempt.update({
+        where: { id: attempt.id },
+        data: {
+          answers: answers as unknown as Prisma.InputJsonValue,
+          score: null,
+          gradingMetadata: Prisma.JsonNull,
+          duration,
+          submittedAt,
+        },
+      });
+
+      return ApiResponseBuilder.success<Attempt>(updatedAttempt);
+    }
+
+    const questions = parseTestQuestions(test.questions);
+    const { score, gradingMetadata } = await computeAttemptGrading(questions, answers);
+
     const updatedAttempt = await prisma.attempt.update({
       where: { id: attempt.id },
       data: {
@@ -131,7 +86,7 @@ export async function POST(
         score,
         duration,
         submittedAt,
-        gradingMetadata: gradingMetadata as unknown as Prisma.InputJsonValue,
+        gradingMetadata: gradingMetadataToPrismaJson(gradingMetadata),
       },
     });
 

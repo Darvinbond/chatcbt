@@ -154,7 +154,7 @@ export default function AI_Prompt({
   return (
     <div className="w-full">
       {showHeader && topTitle && (
-        <div className="mb-7 mx-auto max-w-2xl text-center text-2xl font-semibold leading-9 text-foreground px-1 text-pretty whitespace-pre-wrap">
+        <div className="mb-7 mx-auto max-w-2xl text-center px-1 text-pretty text-foreground">
           {topTitle}
         </div>
       )}

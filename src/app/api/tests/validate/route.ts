@@ -18,6 +18,7 @@ export async function POST(req: Request) {
         title: true,
         description: true,
         duration: true,
+        autoMarkOnSubmit: true,
       },
     });
 

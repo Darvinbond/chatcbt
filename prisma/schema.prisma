@@ -48,6 +48,8 @@ model Test {
   description   String?
   duration      Int       // in minutes
   questions     Json      // JSONB for question data
+  /// When true, objective + theory (AI) marks are computed on submit. When false, submit stores answers only; teacher runs batch marking later.
+  autoMarkOnSubmit Boolean @default(true)
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

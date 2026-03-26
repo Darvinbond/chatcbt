@@ -36,7 +36,11 @@ function buildHtml(attempt: Attempt, questions: Question[]): string {
   <div style="margin-bottom:40px;padding-bottom:24px;border-bottom:1px solid #e4e4e7;">
     <h1 style="font-size:22px;font-weight:600;margin:0 0 4px;color:#09090b;">${esc(attempt.student.name)}</h1>
     <p style="font-size:13px;color:#71717a;margin:0 0 12px;">
-      Submitted ${new Date(attempt.submittedAt).toLocaleString()}${
+      ${
+        attempt.submittedAt
+          ? `Submitted ${new Date(attempt.submittedAt).toLocaleString()}`
+          : 'Not submitted'
+      }${
         attempt.duration != null ? ` · ${attempt.duration} min` : ''
       }
     </p>

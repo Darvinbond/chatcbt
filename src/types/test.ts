@@ -113,10 +113,10 @@ export type AttemptGradingMetadata = z.infer<typeof AttemptGradingMetadataSchema
 export type Attempt = {
   id: string;
   answers: Record<string, string>;
-  score?: number;
-  gradingMetadata?: AttemptGradingMetadata;
+  score?: number | null;
+  gradingMetadata?: AttemptGradingMetadata | null;
   startedAt: Date;
-  submittedAt: Date;
+  submittedAt: Date | null;
   duration?: number;
   student: Student;
   test: Test;
@@ -125,10 +125,10 @@ export type Attempt = {
 export const AttemptSchema: z.ZodType<Attempt> = z.lazy(() => z.object({
   id: z.string(),
   answers: z.record(z.string(), z.string()),
-  score: z.number().optional(),
-  gradingMetadata: AttemptGradingMetadataSchema.optional(),
+  score: z.number().nullable().optional(),
+  gradingMetadata: AttemptGradingMetadataSchema.nullable().optional(),
   startedAt: z.date(),
-  submittedAt: z.date(),
+  submittedAt: z.date().nullable(),
   duration: z.number().optional(),
   student: StudentSchema,
   test: TestSchema,
@@ -143,6 +143,8 @@ export type Test = {
   questions: Question[];
   students?: Student[];
   attempts?: Attempt[];
+  /** When true, scores are computed on student submit; when false, teacher marks later. Omitted on minimal payloads defaults to true. */
+  autoMarkOnSubmit?: boolean;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -159,6 +161,7 @@ export const TestSchema: z.ZodType<Test> = z.lazy(() => z.object({
   questions: z.array(QuestionSchema),
   students: z.array(StudentSchema).optional(),
   attempts: z.array(AttemptSchema).optional(),
+  autoMarkOnSubmit: z.boolean().optional(),
   isActive: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -174,6 +177,7 @@ export const CreateTestSchema = z.object({
   students: z.array(StudentSchema).optional(),
   attempts: z.array(AttemptSchema).optional(),
   isActive: z.boolean(),
+  autoMarkOnSubmit: z.boolean().optional(),
 });
 
 export type CreateTestDto = z.infer<typeof CreateTestSchema>;

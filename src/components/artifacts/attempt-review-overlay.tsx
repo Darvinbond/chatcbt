@@ -92,7 +92,9 @@ export function AttemptReviewOverlay({
             {attempt.student.name}
           </h1>
           <p className="text-sm text-zinc-500">
-            Submitted {new Date(attempt.submittedAt).toLocaleString()}
+            {attempt.submittedAt
+              ? `Submitted ${new Date(attempt.submittedAt).toLocaleString()}`
+              : "Not submitted"}
             {attempt.duration != null ? (
               <span className="text-zinc-400"> · {attempt.duration} min</span>
             ) : null}

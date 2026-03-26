@@ -7,6 +7,7 @@ import { FullTestCreationFlow } from "@/components/features/test-creation/full-t
 import Link from "next/link";
 import { Folder as FolderIcon } from "lucide-react";
 import { useState } from "react";
+import { DeleteFolderDialog } from "@/components/ui/delete-folder-dialog";
 
 async function fetchFolder(folderId: string): Promise<Folder & { tests: Test[] }> {
   const response = await fetch(`/api/folders/${folderId}`);
@@ -26,6 +27,7 @@ export default function FolderDetailsPage() {
   });
 
   const [isChatMode, setIsChatMode] = useState(false);
+  const [deleteFolderOpen, setDeleteFolderOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -43,16 +45,32 @@ export default function FolderDetailsPage() {
 
   return (
     <div className="h-full flex flex-col justify-start">
-      {/* FullTestCreationFlow */}
+      <DeleteFolderDialog
+        open={deleteFolderOpen}
+        onOpenChange={setDeleteFolderOpen}
+        folderId={folder.id}
+        folderName={folder.name}
+        testCount={folder.tests?.length ?? 0}
+      />
+
       <div className="w-full max-w-2xl mx-auto">
         <FullTestCreationFlow
           folderId={folderId as string}
           placeholder="Describe your test"
           topTitle={
-            <span className="flex items-center justify-center gap-2">
-              <FolderIcon className="h-6 w-6 text-black" />
-              <span>{folder.name}</span>
-            </span>
+            <div className="flex flex-col items-center gap-2">
+              <span className="flex items-center justify-center gap-2 text-2xl font-semibold leading-snug tracking-tight text-zinc-900">
+                <FolderIcon className="h-6 w-6 shrink-0 text-zinc-800" />
+                {folder.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => setDeleteFolderOpen(true)}
+                className="text-[13px] font-medium text-zinc-400 hover:text-zinc-600 underline-offset-[5px] decoration-zinc-300/80 underline hover:decoration-zinc-500 transition-colors"
+              >
+                Delete folder
+              </button>
+            </div>
           }
           onModeChange={setIsChatMode}
         />

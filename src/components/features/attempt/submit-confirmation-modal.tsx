@@ -15,6 +15,8 @@ interface SubmitConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   isSubmitting?: boolean;
+  /** Shown under the default text when the test is not auto-marked on submit. */
+  markingNote?: string;
 }
 
 export function SubmitConfirmationModal({
@@ -22,6 +24,7 @@ export function SubmitConfirmationModal({
   onClose,
   onConfirm,
   isSubmitting = false,
+  markingNote,
 }: SubmitConfirmationModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -31,6 +34,9 @@ export function SubmitConfirmationModal({
           <DialogDescription>
             You will not be able to change your answers after submitting.
           </DialogDescription>
+          {markingNote ? (
+            <p className="text-muted-foreground text-sm">{markingNote}</p>
+          ) : null}
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} className="rounded-full">

@@ -114,11 +114,13 @@ export default function TestDetailsPage() {
       title: string;
       description: string;
       duration: number;
+      autoMarkOnSubmit: boolean;
     }) => {
-      const response = await fetch(`/api/tests/${data.testId}`, {
+      const { testId: tid, ...patch } = data;
+      const response = await fetch(`/api/tests/${tid}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(patch),
       });
       if (!response.ok) throw new Error("Failed to save test settings");
       return response.json();
@@ -343,7 +345,13 @@ export default function TestDetailsPage() {
     };
 
     showArtifact(
-      <AttemptsArtifact attempts={test.attempts || []} test={test} />,
+      <AttemptsArtifact
+        attempts={test.attempts || []}
+        test={test}
+        onAttemptsMarked={() =>
+          queryClient.invalidateQueries({ queryKey: ["test", testId] })
+        }
+      />,
       "Attempts",
       [
         {
@@ -360,7 +368,7 @@ export default function TestDetailsPage() {
         deletedAttemptIds: [],
       }
     );
-  }, [test, showArtifact, deleteAttemptsMutation]);
+  }, [test, showArtifact, deleteAttemptsMutation, queryClient, testId]);
 
   const openSettingsArtifact = useCallback(() => {
     if (!test) return;
@@ -369,7 +377,10 @@ export default function TestDetailsPage() {
       setIsLoadingIndex(0);
       saveTestSettingsMutation.mutate({
         testId: testId as string,
-        ...poolData,
+        title: poolData.title,
+        description: poolData.description ?? "",
+        duration: poolData.duration,
+        autoMarkOnSubmit: poolData.autoMarkOnSubmit ?? true,
       });
     };
 
@@ -391,6 +402,7 @@ export default function TestDetailsPage() {
         title: test.title,
         description: test.description,
         duration: test.duration,
+        autoMarkOnSubmit: test.autoMarkOnSubmit ?? true,
       }
     );
   }, [test, showArtifact, saveTestSettingsMutation, testId]);

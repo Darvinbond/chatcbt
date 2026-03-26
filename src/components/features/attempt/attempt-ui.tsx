@@ -126,29 +126,7 @@ export function AttemptUI() {
 
   const currentQuestion = activeList[activeIndex];
 
-  const validateAllSections = (): string | null => {
-    for (const q of objectiveQuestions) {
-      if (!answers[q.id]) {
-        return "Pick an option for every multiple-choice question before you submit.";
-      }
-    }
-    for (const q of theoryQuestions) {
-      const plain = theoryAnswerToPlainText(answers[q.id] ?? "");
-      if (!plain) {
-        return "Add a written answer for every long-response question before you submit.";
-      }
-    }
-    return null;
-  };
-
-  const tryOpenSubmitModal = () => {
-    const err = validateAllSections();
-    if (err) {
-      toast.error(err);
-      return;
-    }
-    setIsSubmitModalOpen(true);
-  };
+  const openSubmitModal = () => setIsSubmitModalOpen(true);
 
   const handleNext = () => {
     if (activeIndex < activeList.length - 1) {
@@ -163,7 +141,7 @@ export function AttemptUI() {
       });
       return;
     }
-    tryOpenSubmitModal();
+    openSubmitModal();
   };
 
   const handlePrev = () => {
@@ -338,7 +316,7 @@ export function AttemptUI() {
                 {activeIndex === activeList.length - 1 &&
                 !(section === "objective" && hasTheory) ? (
                   <Button
-                    onClick={tryOpenSubmitModal}
+                    onClick={openSubmitModal}
                     className="rounded-full bg-zinc-800 text-white hover:bg-zinc-700"
                   >
                     Finish
@@ -392,12 +370,12 @@ export function AttemptUI() {
       <SubmitConfirmationModal
         isOpen={isSubmitModalOpen}
         onClose={() => setIsSubmitModalOpen(false)}
+        markingNote={
+          test.autoMarkOnSubmit === false
+            ? "Your instructor will mark this test later. You will not see a score right away."
+            : undefined
+        }
         onConfirm={async () => {
-          const err = validateAllSections();
-          if (err) {
-            toast.error(err);
-            return;
-          }
           if (test && student && student.id) {
             setIsSubmitting(true);
             try {

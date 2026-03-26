@@ -36,6 +36,13 @@ class TestService {
     return this.client.post(`/${testId}/submit`, { studentId, answers, submittedAt: new Date() });
   }
 
+  async markSubmittedAttempts(testId: string) {
+    return this.client.post<{ marked: number; errorAttemptIds: string[] }>(
+      `/${testId}/mark-attempts`,
+      {}
+    );
+  }
+
   async attemptTest(testId: string, studentId: string) {
     return this.client.post(`/${testId}/attempt`, { studentId });
   }
